@@ -1,0 +1,6 @@
+# Deusauditron Cursor Rules
+
+- Keep evaluation logic async and non-blocking
+- Prefer local backends by default for tests
+- Follow Pydantic v2 patterns in schemas
+- Avoid changing evaluation logic unless explicitly requested
