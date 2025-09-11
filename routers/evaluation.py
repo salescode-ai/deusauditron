@@ -24,6 +24,8 @@ from state.object.eval import EvalState
 
 from engine import Auditron
 
+from config import TracingManager
+
 
 evaluation_router = APIRouter(
     prefix="/agents/{tenant_id}/{agent_id}/{run_id}/evaluation",
@@ -36,6 +38,14 @@ evaluation_router = APIRouter(
 async def evaluate_agent(
     tenant_id: str, agent_id: str, run_id: str, payload: EvaluationPayload
 ):
+    if TracingManager().is_enabled:
+        with TracingManager().get_tracer().start_as_current_span(f"run/{tenant_id}/{agent_id}/{run_id}", # type: ignore
+                                                                 openinference_span_kind="agent"): # type: ignore
+            return await evaluate_agent_internal(tenant_id, agent_id, run_id, payload)
+    else:
+        return await evaluate_agent_internal(tenant_id, agent_id, run_id, payload)
+    
+async def evaluate_agent_internal(tenant_id: str, agent_id: str, run_id: str, payload: EvaluationPayload):
     set_logging_context(tenant_id, agent_id, run_id)
 
     try:

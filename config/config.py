@@ -5,12 +5,18 @@ This module centralizes all environment variable access and provides type-safe c
 
 import os
 from typing import List, Optional
-
+from phoenix.otel import register
 from openinference.instrumentation import OITracer
 from loguru import logger
 from pydantic import BaseModel
 from pydantic import Field
+from dotenv import load_dotenv
 
+try:
+    load_dotenv()
+except ImportError:
+    logger.warning("Error loading .env file")
+    pass
 
 class TracingConfig(BaseModel):
     enabled: bool = Field(default=False)
@@ -39,11 +45,25 @@ class TracingManager:
             config = get_config()
             if not config.tracing.enabled:
                 return
-            from phoenix.otel import register
+            
+            # Set up Phoenix Cloud authentication
             os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = config.tracing.tracer_url
             if config.tracing.tracer_api_key:
-                os.environ["PHOENIX_API_KEY"] = config.tracing.tracer_api_key
-            self._tracer = register(project_name="Deusauditron", auto_instrument=True, batch=True).get_tracer("Deusauditron")
+                os.environ["PHOENIX_CLIENT_HEADERS"] = f"api_key={config.tracing.tracer_api_key}"
+            
+            # Register Phoenix tracer with proper configuration
+            tracer_provider = register(
+                project_name="Deusauditron", 
+                auto_instrument=True, 
+                batch=True
+            )
+            self._tracer = tracer_provider.get_tracer("Deusauditron")
+            
+            # Instrument LiteLLM for tracing
+            from openinference.instrumentation.litellm import LiteLLMInstrumentor
+            LiteLLMInstrumentor().instrument(tracer_provider=tracer_provider)
+            
+            logger.info("Phoenix tracing initialized successfully")
         except Exception as e:
             logger.error(f"Failed to auto-initialize Phoenix tracer: {e}")
             self._tracer = None
