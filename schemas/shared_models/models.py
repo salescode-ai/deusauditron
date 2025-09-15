@@ -213,6 +213,5 @@ class ScenarioPayload(BaseModel):
     blueprint: str = Field(...)
     transcript: List[Message] = Field(...)
     expected_output: str = Field(...)
-    last_node_name: Optional[str] = Field(default=None)
     dynamic_data: Optional[Dict[str, Any]] = Field(default=None)
     replay: bool = Field(default=False)

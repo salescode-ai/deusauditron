@@ -49,7 +49,7 @@ async def run_scenario(payload: ScenarioPayload):
                 else ""
             )
             messages = transcript[:-1]
-            last_node_name = payload.last_node_name if payload.last_node_name else ""
+            last_node_name = messages[-1].metadata.get("node", "")
             current_output = await dm_adapter.run_agent(
                 tenant_id=tenant_id,
                 agent_id=agent_id,
