@@ -16,6 +16,7 @@ from app_logging.logger import logger
 
 from engine import Auditron
 from routers.evaluation import evaluation_router
+from routers.scenario_evaluation import scenario_evaluation_router
 
 
 @asynccontextmanager
@@ -81,10 +82,10 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     prefix = "/api/v1"
     app.include_router(evaluation_router, prefix=prefix)
+    app.include_router(scenario_evaluation_router, prefix=prefix)
     return app
 
 
 app = create_app()
 
 # Run with: uvicorn app:app --host 0.0.0.0 --port 8081
-

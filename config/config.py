@@ -96,6 +96,7 @@ class Config(BaseModel):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     state: StateConfig = Field(default_factory=StateConfig)
     log_level: str = Field(default="DEBUG")
+    deusmachina_url: str = Field(default="http://localhost:8080/api/v1")
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -128,6 +129,7 @@ class Config(BaseModel):
                 check_interval=float(os.getenv("STATE_CHECK_INTERVAL", "0.1")),
             ),
             log_level=os.getenv("DEUSAUDITRON_LOG_LEVEL", "DEBUG").upper(),
+            deusmachina_url=os.getenv("DEUSMACHINA_URL", "http://localhost:8080/api/v1"),
         )
         logger.info("Loaded Deusauditron configuration: {}", config.model_dump_json(indent=2))
         return config

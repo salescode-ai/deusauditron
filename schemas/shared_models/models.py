@@ -56,7 +56,9 @@ class Message(BaseModel):
     content: Union[str, List[Dict[str, Any]]] = Field(...)
     role: MessageRole = Field(..., serialization_alias="role")
     metadata: Dict[str, Any] = Field(
-        default_factory=lambda: {"timestamp": str(datetime.now(timezone.utc).timestamp())}
+        default_factory=lambda: {
+            "timestamp": str(datetime.now(timezone.utc).timestamp())
+        }
     )
 
 
@@ -205,3 +207,12 @@ class AgentEvalRequest(BaseRequest):
 class JourneyResponse(BaseModel):
     journey: Dict[str, Any] = Field(...)
 
+
+class ScenarioPayload(BaseModel):
+    metadata: Dict[str, Any] = Field(...)
+    blueprint: str = Field(...)
+    transcript: List[Message] = Field(...)
+    expected_output: str = Field(...)
+    last_node_name: Optional[str] = Field(default=None)
+    dynamic_data: Optional[Dict[str, Any]] = Field(default=None)
+    replay: bool = Field(default=False)
