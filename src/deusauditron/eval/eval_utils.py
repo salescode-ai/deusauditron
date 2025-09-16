@@ -10,7 +10,7 @@ from deusauditron.schemas.autogen.references.evaluation_rule_result_schema impor
 from deusauditron.schemas.shared_models.models import LLMResponse, Message
 
 from .eval_common import LLMResponseParser, ModelParams
-from deusmachine_adapter.dm_adapter import DMAdapter
+from deusauditron.deusmachine_adapter.dm_adapter import DMAdapter
 
 
 class EvaluationUtils:

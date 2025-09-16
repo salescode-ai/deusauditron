@@ -4,12 +4,12 @@ from fastapi import APIRouter
 from fastapi import HTTPException
 from fastapi import status
 
-from app_logging.context import set_logging_context
-from schemas.shared_models.models import ScenarioPayload
-from deusmachine_adapter.dm_adapter import DMAdapter
-from eval.eval_utils import EvaluationUtils
-from schemas.shared_models.models import MessageRole
-from app_logging.logger import logger
+from deusauditron.app_logging.context import set_logging_context
+from deusauditron.schemas.shared_models.models import ScenarioPayload
+from deusauditron.deusmachine_adapter.dm_adapter import DMAdapter
+from deusauditron.eval.eval_utils import EvaluationUtils
+from deusauditron.schemas.shared_models.models import MessageRole
+from deusauditron.app_logging.logger import logger
 
 
 scenario_evaluation_router = APIRouter(

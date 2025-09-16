@@ -481,3 +481,14 @@ class MessageType(str, Enum):
     RUN_AGENT = "Run_Agent"
     UNKNOWN = "Unknown_Message_Type"
     ERROR = "Error_Processing_Request"
+
+
+class ScenarioPayload(BaseModel):
+    """Payload for scenario endpoint."""
+
+    metadata: Dict[str, Any] = Field(..., description="Agent metadata")
+    blueprint: str = Field(..., description="Agent blueprint identifier")
+    transcript: List[Message] = Field(..., description="The transcript of the scenario")
+    expected_output: str = Field(..., description="The expected output of the scenario")
+    dynamic_data: Optional[Dict[str, Any]] = Field(default=None, description="Dynamic data for the scenario")
+    replay: bool = Field(default=False, description="Whether to replay the scenario")

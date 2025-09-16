@@ -2,9 +2,9 @@ import os
 from typing import Optional, Dict, Any, List
 from httpx import AsyncClient
 
-from config import get_config
-from app_logging.logger import logger
-from schemas.shared_models.models import Message
+from deusauditron.config import get_config
+from deusauditron.app_logging.logger import logger
+from deusauditron.schemas.shared_models.models import Message
 
 config = get_config()
 
