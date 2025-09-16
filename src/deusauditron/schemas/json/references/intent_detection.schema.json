@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "IntentDetectionConfig",
+  "type": "object",
+  "properties": {
+    "prompt_template": {
+      "type": "string"
+    },
+    "model": {
+      "$ref": "model.schema.json"
+    }
+  },
+  "required": ["model"],
+  "additionalProperties": false
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "DataEntry",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "secret": {
+      "type": "boolean",
+      "default": false
+    },
+    "value": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "required": ["name"]
+}

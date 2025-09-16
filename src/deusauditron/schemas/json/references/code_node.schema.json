@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "CodeNodeConfig",
+  "allOf": [
+    { "$ref": "base_node.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "static_argmap": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "validate_when_executing": {
+          "type": "boolean",
+          "default": false
+        },
+        "code": {
+          "type": "string"
+        }
+      },
+      "required": ["code"]
+    }
+  ]
+}

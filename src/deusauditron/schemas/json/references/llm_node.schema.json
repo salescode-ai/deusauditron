@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "LLMNodeConfig",
+  "allOf": [
+    { "$ref": "base_node.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "structured_output": { "type": "boolean", "default": false },
+        "last_n_turns_llm": { "type": "integer", "default": -1 },
+        "last_n_turns_intent": { "type": "integer", "default": -1 },
+        "system_prompt": { "type": "string" },
+        "overridden_global_prompt": { "type": "string" },
+        "next_node": { "type": "string" },
+        "global_code_execution_stage": { "type": "string", "enum": ["with_llm", "before_llm", "after_llm"] },
+        "input": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "paths": {
+          "type": "object",
+          "properties": {
+            "intent_based": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "intent_action.schema.json"
+              }
+            },
+            "code_paths": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "node": { "type": "string" },
+                  "execution_stage": {
+                    "type": "string",
+                    "enum": ["with_llm", "before_llm", "after_llm"]
+                  }
+                },
+                "required": ["node", "execution_stage"],
+                "additionalProperties": false
+              }
+            },
+            "rag_paths": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "model": {
+          "$ref": "model.schema.json"
+        },
+        "filler": {
+          "$ref": "filler.schema.json"
+        },
+        "timeout": { "type": "number", "exclusiveMinimum": 0 },
+        "evaluation_rules": {
+          "type": "array",
+          "items": {
+            "$ref": "eval_rule.schema.json"
+          }
+        }
+      },
+      "required": ["last_n_turns_llm", "last_n_turns_intent", "system_prompt", "model"]
+    }
+  ]
+}

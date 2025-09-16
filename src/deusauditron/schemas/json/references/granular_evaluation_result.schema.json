@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "GranularEvaluationResults",
+  "type": "object",
+  "description": "Granular evaluation results",
+  "properties": {
+    "category": {
+      "type": "string",
+      "description": "Evaluation category",
+      "enum": ["Turn", "Intent", "Node", "Flow"],
+      "default": "Turn"
+    },
+    "input_text": {
+      "type": "string",
+      "description": "Turn/Intent/Node text input"
+    },
+    "node": {
+      "type": "string",
+      "description": "Turn identifier"
+    },
+    "rule_results": {
+      "type": "array",
+      "description": "List of evaluation rule results",
+      "items": {
+        "$ref": "evaluation_rule_result.schema.json"
+      }
+    }
+  },
+  "required": ["category", "input_text", "node", "rule_results"],
+  "additionalProperties": false
+} 

@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "VectorStoreNodeConfig",
+  "allOf": [
+    { "$ref": "base_node.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "kb": {
+          "oneOf": [
+            { "$ref": "base_knowledgebase.schema.json" },
+            { "$ref": "redis_knowledgebase.schema.json" }
+          ]
+        },
+        "search_type": {
+          "type": "string",
+          "default": "similarity"
+        },
+        "search_kwargs": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        }
+      },
+      "required": ["kb"]
+    }
+  ]
+}

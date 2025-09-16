@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "title": "GlobalCodeNodeConfig",
+    "allOf": [
+      { "$ref": "code_node.schema.json" },
+      {
+        "type": "object",
+        "properties": {
+          "order": {
+            "type": "integer"
+          }
+        },
+        "required": ["code", "order"]
+      }
+    ]
+  }
+  

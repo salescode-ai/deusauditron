@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "LLMNodeForConversation",
+  "allOf": [
+    { "$ref": "llm_node.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "global_code_node_execution_stage": {
+          "type": "string",
+          "enum": ["with_llm", "before_llm", "after_llm"]
+        },
+        "skip_intent_upon_interruption": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": ["paths"]
+    }
+  ]
+}
