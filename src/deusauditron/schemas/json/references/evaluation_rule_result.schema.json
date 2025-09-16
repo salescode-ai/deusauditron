@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "EvaluationRuleResult",
+  "type": "object",
+  "properties": {
+    "rule": {
+      "$ref": "eval_rule.schema.json",
+      "default": {}
+    },
+    "model_results": {
+      "type": "array",
+      "description": "List of model evaluation results",
+      "default": [],
+      "items": {
+        "type": "object",
+        "properties": {
+          "model_name": {
+            "type": "string",
+            "description": "Name of the model",
+            "default": ""
+          },
+          "result": {
+            "type": "string",
+            "description": "Evaluation result for the model",
+            "default": ""
+          },
+          "reasoning": {
+            "type": "string",
+            "description": "Reasoning for the evaluation result",
+            "default": ""
+          }
+        },
+        "required": ["model_name", "result", "reasoning"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["rule", "model_results"],
+  "additionalProperties": false
+}

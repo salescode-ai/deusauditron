@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "DataSourceConfig",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["s3", "redis"]
+    },
+    "source": {
+      "type": "string"
+    }
+  },
+  "required": ["type", "source"]
+}

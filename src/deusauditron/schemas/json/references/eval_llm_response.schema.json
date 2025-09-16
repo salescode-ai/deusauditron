@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "EvalLLMResponse",
+  "type": "object",
+  "description": "Schema for LLM evaluation response containing result and reasoning",
+  "properties": {
+    "result": {
+      "type": "string",
+      "description": "Evaluation result indicating pass, fail, or not applicable",
+      "enum": ["PASS", "FAIL", "N.A.","NO_EVAL"],
+      "pattern": "^(PASS|FAIL|N\\.A\\.|NO_EVAL)$"
+    },
+    "reason": {
+      "type": "string",
+      "description": "A detailed, evidence-based explanation for the evaluation decision"
+    }
+  },
+  "required": ["result", "reason"],
+  "additionalProperties": false
+} 

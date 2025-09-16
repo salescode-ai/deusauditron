@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "EvaluationResult",
+  "type": "object",
+  "description": "Complete evaluation results containing all evaluation levels",
+  "properties": {
+    "status": {
+      "type": "string",
+      "description": "Status of the evaluation",
+      "enum": ["Requested", "Submitted", "In Progress", "Completed", "Error"]
+    },
+    "progress": {
+      "type": "number",
+      "description": "Progress of the evaluation"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when evaluation started (ISO 8601 format)"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when evaluation ended (ISO 8601 format)"
+    },
+    "evaluated_nodes": {
+      "type": "array",
+      "description": "List of all node names that were evaluated",
+      "items": {
+        "type": "string",
+        "description": "Node name"
+      }
+    },
+    "turn_level_evaluations": {
+      "type": "array",
+      "description": "Turn level evaluation results",
+      "items": {
+        "$ref": "granular_evaluation_result.schema.json"
+      }
+    },
+    "node_level_evaluations": {
+      "type": "array",
+      "description": "Node level evaluation results",
+      "items": {
+        "$ref": "granular_evaluation_result.schema.json"
+      }
+    },
+    "flow_level_evaluations": {
+      "type": "array",
+      "description": "Flow level evaluation results",
+      "items": {
+        "$ref": "granular_evaluation_result.schema.json"
+      }
+    },
+    "intent_level_evaluations": {
+      "type": "array",
+      "description": "Intent level evaluation results",
+      "items": {
+        "$ref": "granular_evaluation_result.schema.json"
+      }
+    },
+    "auto_refinements": {
+      "type": "array",
+      "description": "Array of auto-refinement suggestions",
+      "items": {
+        "$ref": "auto_refine.schema.json"
+      }
+    }
+  },
+  "additionalProperties": false
+}

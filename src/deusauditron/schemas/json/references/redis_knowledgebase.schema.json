@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "RedisKnowledgebaseConfig",
+  "allOf": [
+    { "$ref": "base_knowledgebase.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "string"
+        },
+        "redis_url": {
+          "type": "string",
+          "default": "redis://localhost:6379"
+        },
+        "indexing_algorithm": {
+          "type": "string",
+          "default": "HNSW"
+        },
+        "distance_metric": {
+          "type": "string",
+          "default": "COSINE"
+        }
+      },
+      "required": ["index"]
+    }
+  ]
+}

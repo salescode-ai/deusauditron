@@ -1,0 +1,1459 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "TeteATeteFlowConfig",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "teteatete"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "global": {
+      "$schema": "http://json-schema.org/draft-07/schema",
+      "title": "GlobalConfig",
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        },
+        "supports_vision": {
+          "type": "boolean",
+          "default": false
+        },
+        "metadata": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$schema": "http://json-schema.org/draft-07/schema",
+                "title": "DataEntry",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "secret": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "value": {
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            ]
+          }
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "static": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$schema": "http://json-schema.org/draft-07/schema",
+                    "title": "DataEntry",
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "value": {
+                        "type": "string",
+                        "default": ""
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ]
+                  }
+                }
+              ]
+            },
+            "dynamic": {
+              "type": "object",
+              "additionalProperties": {
+                "$schema": "http://json-schema.org/draft-07/schema",
+                "title": "DataSourceConfig",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "s3",
+                      "redis"
+                    ]
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "source"
+                ]
+              }
+            }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "static"
+              ]
+            },
+            {
+              "required": [
+                "dynamic"
+              ]
+            }
+          ]
+        },
+        "vocabulary_replacement": {
+          "$schema": "http://json-schema.org/draft-07/schema",
+          "title": "DataSourceConfig",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "s3",
+                "redis"
+              ]
+            },
+            "source": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "source"
+          ]
+        },
+        "intent_detection": {
+          "$schema": "http://json-schema.org/draft-07/schema",
+          "title": "IntentDetectionConfig",
+          "type": "object",
+          "properties": {
+            "prompt_template": {
+              "type": "string"
+            },
+            "model": {
+              "$schema": "http://json-schema.org/draft-07/schema",
+              "title": "ModelConfig",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+                },
+                "temperature": {
+                  "type": "number"
+                },
+                "reasoning_effort": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ]
+                },
+                "response_schema": {
+                  "type": "string",
+                  "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+                },
+                "fallback_models": {
+                  "type": "array",
+                  "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "temperature"
+              ]
+            }
+          },
+          "required": [
+            "model"
+          ],
+          "additionalProperties": false
+        },
+        "transcriber": {
+          "$schema": "http://json-schema.org/draft-07/schema",
+          "title": "TranscriberConfig",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "LLM",
+                "AWS",
+                "DEEPGRAM"
+              ]
+            },
+            "model": {
+              "$schema": "http://json-schema.org/draft-07/schema",
+              "title": "ModelConfig",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+                },
+                "temperature": {
+                  "type": "number"
+                },
+                "reasoning_effort": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ]
+                },
+                "response_schema": {
+                  "type": "string",
+                  "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+                },
+                "fallback_models": {
+                  "type": "array",
+                  "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "temperature"
+              ]
+            },
+            "language": {
+              "type": "string",
+              "description": "Language code for transcription (e.g., 'en-US', 'es-ES'). If not specified, automatic language detection will be used where supported."
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "LLM"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "model"
+                ]
+              }
+            }
+          ]
+        },
+        "code_nodes": {
+          "type": "array",
+          "items": {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "title": "GlobalCodeNodeConfig",
+            "allOf": [
+              {
+                "$schema": "http://json-schema.org/draft-07/schema",
+                "title": "CodeNodeConfig",
+                "allOf": [
+                  {
+                    "$schema": "http://json-schema.org/draft-07/schema",
+                    "title": "BaseNodeConfig",
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "LLMNode",
+                          "CodeNode",
+                          "VectorStoreNode"
+                        ]
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "position": {
+                        "$schema": "http://json-schema.org/draft-07/schema",
+                        "title": "Position",
+                        "type": "object",
+                        "properties": {
+                          "x": {
+                            "type": "integer"
+                          },
+                          "y": {
+                            "type": "integer"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "pre_callback": {
+                        "type": "string"
+                      },
+                      "post_callback": {
+                        "type": "string"
+                      },
+                      "emit_output": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "static_argmap": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "validate_when_executing": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "code": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "code"
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "order": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "code",
+                  "order"
+                ]
+              }
+            ]
+          }
+        },
+        "llm_nodes": {
+          "type": "array",
+          "items": {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "title": "GlobalLLMNodeForConversation",
+            "allOf": [
+              {
+                "$schema": "http://json-schema.org/draft-07/schema",
+                "title": "LLMNodeConfig",
+                "allOf": [
+                  {
+                    "$schema": "http://json-schema.org/draft-07/schema",
+                    "title": "BaseNodeConfig",
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "LLMNode",
+                          "CodeNode",
+                          "VectorStoreNode"
+                        ]
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "position": {
+                        "$schema": "http://json-schema.org/draft-07/schema",
+                        "title": "Position",
+                        "type": "object",
+                        "properties": {
+                          "x": {
+                            "type": "integer"
+                          },
+                          "y": {
+                            "type": "integer"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "pre_callback": {
+                        "type": "string"
+                      },
+                      "post_callback": {
+                        "type": "string"
+                      },
+                      "emit_output": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "structured_output": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "last_n_turns_llm": {
+                        "type": "integer",
+                        "default": -1
+                      },
+                      "last_n_turns_intent": {
+                        "type": "integer",
+                        "default": -1
+                      },
+                      "system_prompt": {
+                        "type": "string"
+                      },
+                      "overridden_global_prompt": {
+                        "type": "string"
+                      },
+                      "next_node": {
+                        "type": "string"
+                      },
+                      "global_code_execution_stage": {
+                        "type": "string",
+                        "enum": [
+                          "with_llm",
+                          "before_llm",
+                          "after_llm"
+                        ]
+                      },
+                      "input": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "paths": {
+                        "type": "object",
+                        "properties": {
+                          "intent_based": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "$schema": "http://json-schema.org/draft-07/schema",
+                              "title": "IntentAction",
+                              "type": "object",
+                              "properties": {
+                                "intent_instruction": {
+                                  "type": "string"
+                                },
+                                "target_node": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "code_paths": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "execution_stage": {
+                                  "type": "string",
+                                  "enum": [
+                                    "with_llm",
+                                    "before_llm",
+                                    "after_llm"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "execution_stage"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "rag_paths": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "model": {
+                        "$schema": "http://json-schema.org/draft-07/schema",
+                        "title": "ModelConfig",
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+                          },
+                          "temperature": {
+                            "type": "number"
+                          },
+                          "reasoning_effort": {
+                            "type": "string",
+                            "enum": [
+                              "low",
+                              "medium",
+                              "high"
+                            ]
+                          },
+                          "response_schema": {
+                            "type": "string",
+                            "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+                          },
+                          "fallback_models": {
+                            "type": "array",
+                            "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "temperature"
+                        ]
+                      },
+                      "filler": {
+                        "$schema": "http://json-schema.org/draft-07/schema",
+                        "title": "FillerConfig",
+                        "type": "object",
+                        "properties": {
+                          "phrase": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "frequency": {
+                            "type": "number"
+                          },
+                          "init_delay": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "phrase",
+                          "frequency",
+                          "init_delay"
+                        ]
+                      },
+                      "timeout": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "evaluation_rules": {
+                        "type": "array",
+                        "items": {
+                          "$schema": "http://json-schema.org/draft-07/schema",
+                          "title": "EvalRule",
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "description": "Name of the evaluation rule",
+                              "default": ""
+                            },
+                            "instruction": {
+                              "type": "string",
+                              "description": "Instruction for model to figure out wheter the response is correct or incorrect for the given evaluation rule",
+                              "default": ""
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "turn",
+                                "node",
+                                "flow",
+                                "intent"
+                              ],
+                              "description": "Type of evaluation rule",
+                              "default": "turn"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "instruction",
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "last_n_turns_llm",
+                      "last_n_turns_intent",
+                      "system_prompt",
+                      "model"
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "trigger_intent": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "skip_intent_upon_interruption": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "trigger_intent",
+                  "next_node"
+                ]
+              }
+            ]
+          }
+        },
+        "evaluation_rules": {
+          "type": "array",
+          "items": {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "title": "EvalRule",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the evaluation rule",
+                "default": ""
+              },
+              "instruction": {
+                "type": "string",
+                "description": "Instruction for model to figure out wheter the response is correct or incorrect for the given evaluation rule",
+                "default": ""
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "turn",
+                  "node",
+                  "flow",
+                  "intent"
+                ],
+                "description": "Type of evaluation rule",
+                "default": "turn"
+              }
+            },
+            "required": [
+              "name",
+              "instruction",
+              "type"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "title": "LLMNodeForConversation",
+            "allOf": [
+              {
+                "$schema": "http://json-schema.org/draft-07/schema",
+                "title": "LLMNodeConfig",
+                "allOf": [
+                  {
+                    "$schema": "http://json-schema.org/draft-07/schema",
+                    "title": "BaseNodeConfig",
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "LLMNode",
+                          "CodeNode",
+                          "VectorStoreNode"
+                        ]
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "position": {
+                        "$schema": "http://json-schema.org/draft-07/schema",
+                        "title": "Position",
+                        "type": "object",
+                        "properties": {
+                          "x": {
+                            "type": "integer"
+                          },
+                          "y": {
+                            "type": "integer"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "pre_callback": {
+                        "type": "string"
+                      },
+                      "post_callback": {
+                        "type": "string"
+                      },
+                      "emit_output": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "structured_output": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "last_n_turns_llm": {
+                        "type": "integer",
+                        "default": -1
+                      },
+                      "last_n_turns_intent": {
+                        "type": "integer",
+                        "default": -1
+                      },
+                      "system_prompt": {
+                        "type": "string"
+                      },
+                      "overridden_global_prompt": {
+                        "type": "string"
+                      },
+                      "next_node": {
+                        "type": "string"
+                      },
+                      "global_code_execution_stage": {
+                        "type": "string",
+                        "enum": [
+                          "with_llm",
+                          "before_llm",
+                          "after_llm"
+                        ]
+                      },
+                      "input": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "paths": {
+                        "type": "object",
+                        "properties": {
+                          "intent_based": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "$schema": "http://json-schema.org/draft-07/schema",
+                              "title": "IntentAction",
+                              "type": "object",
+                              "properties": {
+                                "intent_instruction": {
+                                  "type": "string"
+                                },
+                                "target_node": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "code_paths": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "node": {
+                                  "type": "string"
+                                },
+                                "execution_stage": {
+                                  "type": "string",
+                                  "enum": [
+                                    "with_llm",
+                                    "before_llm",
+                                    "after_llm"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "node",
+                                "execution_stage"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "rag_paths": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "model": {
+                        "$schema": "http://json-schema.org/draft-07/schema",
+                        "title": "ModelConfig",
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+                          },
+                          "temperature": {
+                            "type": "number"
+                          },
+                          "reasoning_effort": {
+                            "type": "string",
+                            "enum": [
+                              "low",
+                              "medium",
+                              "high"
+                            ]
+                          },
+                          "response_schema": {
+                            "type": "string",
+                            "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+                          },
+                          "fallback_models": {
+                            "type": "array",
+                            "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "temperature"
+                        ]
+                      },
+                      "filler": {
+                        "$schema": "http://json-schema.org/draft-07/schema",
+                        "title": "FillerConfig",
+                        "type": "object",
+                        "properties": {
+                          "phrase": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "frequency": {
+                            "type": "number"
+                          },
+                          "init_delay": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "phrase",
+                          "frequency",
+                          "init_delay"
+                        ]
+                      },
+                      "timeout": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "evaluation_rules": {
+                        "type": "array",
+                        "items": {
+                          "$schema": "http://json-schema.org/draft-07/schema",
+                          "title": "EvalRule",
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "description": "Name of the evaluation rule",
+                              "default": ""
+                            },
+                            "instruction": {
+                              "type": "string",
+                              "description": "Instruction for model to figure out wheter the response is correct or incorrect for the given evaluation rule",
+                              "default": ""
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "turn",
+                                "node",
+                                "flow",
+                                "intent"
+                              ],
+                              "description": "Type of evaluation rule",
+                              "default": "turn"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "instruction",
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "last_n_turns_llm",
+                      "last_n_turns_intent",
+                      "system_prompt",
+                      "model"
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "global_code_node_execution_stage": {
+                    "type": "string",
+                    "enum": [
+                      "with_llm",
+                      "before_llm",
+                      "after_llm"
+                    ]
+                  },
+                  "skip_intent_upon_interruption": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "paths"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 1,
+      "contains": {
+        "$schema": "http://json-schema.org/draft-07/schema",
+        "title": "LLMNodeConfig",
+        "allOf": [
+          {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "title": "BaseNodeConfig",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "LLMNode",
+                  "CodeNode",
+                  "VectorStoreNode"
+                ]
+              },
+              "description": {
+                "type": "string"
+              },
+              "position": {
+                "$schema": "http://json-schema.org/draft-07/schema",
+                "title": "Position",
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "integer"
+                  },
+                  "y": {
+                    "type": "integer"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "pre_callback": {
+                "type": "string"
+              },
+              "post_callback": {
+                "type": "string"
+              },
+              "emit_output": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "structured_output": {
+                "type": "boolean",
+                "default": false
+              },
+              "last_n_turns_llm": {
+                "type": "integer",
+                "default": -1
+              },
+              "last_n_turns_intent": {
+                "type": "integer",
+                "default": -1
+              },
+              "system_prompt": {
+                "type": "string"
+              },
+              "overridden_global_prompt": {
+                "type": "string"
+              },
+              "next_node": {
+                "type": "string"
+              },
+              "global_code_execution_stage": {
+                "type": "string",
+                "enum": [
+                  "with_llm",
+                  "before_llm",
+                  "after_llm"
+                ]
+              },
+              "input": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "paths": {
+                "type": "object",
+                "properties": {
+                  "intent_based": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "$schema": "http://json-schema.org/draft-07/schema",
+                      "title": "IntentAction",
+                      "type": "object",
+                      "properties": {
+                        "intent_instruction": {
+                          "type": "string"
+                        },
+                        "target_node": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "code_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "node": {
+                          "type": "string"
+                        },
+                        "execution_stage": {
+                          "type": "string",
+                          "enum": [
+                            "with_llm",
+                            "before_llm",
+                            "after_llm"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "node",
+                        "execution_stage"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "rag_paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "model": {
+                "$schema": "http://json-schema.org/draft-07/schema",
+                "title": "ModelConfig",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+                  },
+                  "temperature": {
+                    "type": "number"
+                  },
+                  "reasoning_effort": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
+                  },
+                  "response_schema": {
+                    "type": "string",
+                    "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+                  },
+                  "fallback_models": {
+                    "type": "array",
+                    "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "temperature"
+                ]
+              },
+              "filler": {
+                "$schema": "http://json-schema.org/draft-07/schema",
+                "title": "FillerConfig",
+                "type": "object",
+                "properties": {
+                  "phrase": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "frequency": {
+                    "type": "number"
+                  },
+                  "init_delay": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "phrase",
+                  "frequency",
+                  "init_delay"
+                ]
+              },
+              "timeout": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "evaluation_rules": {
+                "type": "array",
+                "items": {
+                  "$schema": "http://json-schema.org/draft-07/schema",
+                  "title": "EvalRule",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the evaluation rule",
+                      "default": ""
+                    },
+                    "instruction": {
+                      "type": "string",
+                      "description": "Instruction for model to figure out wheter the response is correct or incorrect for the given evaluation rule",
+                      "default": ""
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "turn",
+                        "node",
+                        "flow",
+                        "intent"
+                      ],
+                      "description": "Type of evaluation rule",
+                      "default": "turn"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "instruction",
+                    "type"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "last_n_turns_llm",
+              "last_n_turns_intent",
+              "system_prompt",
+              "model"
+            ]
+          }
+        ]
+      }
+    },
+    "evaluation": {
+      "$schema": "http://json-schema.org/draft-07/schema",
+      "title": "EvaluationConfig",
+      "type": "object",
+      "properties": {
+        "turn_eval_models": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "title": "ModelConfig",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+              },
+              "temperature": {
+                "type": "number"
+              },
+              "reasoning_effort": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "response_schema": {
+                "type": "string",
+                "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+              },
+              "fallback_models": {
+                "type": "array",
+                "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "temperature"
+            ]
+          }
+        },
+        "node_eval_models": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "title": "ModelConfig",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+              },
+              "temperature": {
+                "type": "number"
+              },
+              "reasoning_effort": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "response_schema": {
+                "type": "string",
+                "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+              },
+              "fallback_models": {
+                "type": "array",
+                "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "temperature"
+            ]
+          }
+        },
+        "conversation_eval_models": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "title": "ModelConfig",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+              },
+              "temperature": {
+                "type": "number"
+              },
+              "reasoning_effort": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "response_schema": {
+                "type": "string",
+                "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+              },
+              "fallback_models": {
+                "type": "array",
+                "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "temperature"
+            ]
+          }
+        },
+        "intent_eval_models": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$schema": "http://json-schema.org/draft-07/schema",
+            "title": "ModelConfig",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+              },
+              "temperature": {
+                "type": "number"
+              },
+              "reasoning_effort": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "response_schema": {
+                "type": "string",
+                "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+              },
+              "fallback_models": {
+                "type": "array",
+                "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "temperature"
+            ]
+          }
+        },
+        "auto_refine_model": {
+          "$schema": "http://json-schema.org/draft-07/schema",
+          "title": "ModelConfig",
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The name of the model in the format 'provider/model-name' (e.g., 'groq/llama-3.3-70b-versatile', 'openai/gpt-3.5-turbo')"
+            },
+            "temperature": {
+              "type": "number"
+            },
+            "reasoning_effort": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            },
+            "response_schema": {
+              "type": "string",
+              "description": "The schema of the response from the model. This is a JSON schema string. Presence indicates that model will return a structured response. DeusMachina will only support strict json response if this parameter is present."
+            },
+            "fallback_models": {
+              "type": "array",
+              "description": "The models to use as fallbacks. If the model fails, the fallback models will be used in order.",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "temperature"
+          ]
+        }
+      },
+      "required": [
+        "turn_eval_models",
+        "node_eval_models",
+        "conversation_eval_models",
+        "intent_eval_models",
+        "auto_refine_model"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "type",
+    "name",
+    "version",
+    "global",
+    "nodes"
+  ]
+}

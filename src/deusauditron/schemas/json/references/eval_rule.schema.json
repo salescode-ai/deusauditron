@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "EvalRule",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the evaluation rule",
+      "default": ""
+    },
+    "instruction": {
+      "type": "string",
+      "description": "Instruction for model to figure out wheter the response is correct or incorrect for the given evaluation rule",
+      "default": ""
+    },
+    "type": {
+      "type": "string",
+      "enum": ["turn", "node", "flow", "intent"],
+      "description": "Type of evaluation rule",
+      "default": "turn"
+    }
+  },
+  "required": ["name", "instruction", "type"],
+  "additionalProperties": false
+}

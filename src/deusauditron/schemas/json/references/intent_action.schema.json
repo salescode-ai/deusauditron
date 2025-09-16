@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "IntentAction",
+  "type": "object",
+  "properties": {
+    "intent_instruction": {
+      "type": "string"
+    },
+    "target_node": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "title": "GlobalLLMNodeForConversation",
+    "allOf": [
+      { "$ref": "llm_node.schema.json" },
+      {
+        "type": "object",
+        "properties": {
+          "trigger_intent": {
+            "type": "string",
+            "default": ""
+          },
+          "skip_intent_upon_interruption": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": ["trigger_intent", "next_node"]
+      }
+    ]
+  }

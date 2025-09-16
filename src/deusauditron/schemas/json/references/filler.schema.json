@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "FillerConfig",
+  "type": "object",
+  "properties": {
+    "phrase": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "frequency": {
+      "type": "number"
+    },
+    "init_delay": {
+      "type": "number"
+    }
+  },
+  "required": ["phrase", "frequency", "init_delay"]
+} 
