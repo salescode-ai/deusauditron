@@ -19,6 +19,10 @@ from .eval_strategies import ConversationEvaluationStrategy, IntentEvaluationStr
 from .progress_handler import EvaluationProgressHandler
 from .progress_tracker import MilestoneType
 from .refinement_strategies import AutoRefinementOrchestrator
+from deusauditron.observability.phoenix_eval_adapter import log_rule_evaluation_span
+from deusauditron.observability.phoenix_rubric_adapter import maybe_run_rubric_for_rule
+from deusauditron.observability.phoenix_oob_adapter import maybe_run_oob_evals_for_turn, maybe_run_oob_evals_for_flow
+from deusauditron.config import TracingManager
 
 
 class EvaluationError(Exception):
@@ -194,36 +198,76 @@ class LLMEvaluator:
                 logger.error(f"Error in {evaluation_type} evaluation: {result}")
 
     async def _execute_turn_evaluations_with_progress(self, interaction_log: List[InteractionLog]) -> None:
-        try:
-            await self._execute_turn_evaluations(interaction_log)
-            await self.progress_handler.mark_milestone_complete(MilestoneType.TURN_EVALUATIONS)
-        except Exception as e:
-            logger.error(f"Turn evaluations failed: {e}")
-            raise
+        tracer = TracingManager().get_tracer()
+        if tracer is not None:
+            with tracer.start_as_current_span("eval/turn"):  # type: ignore
+                try:
+                    await self._execute_turn_evaluations(interaction_log)
+                    await self.progress_handler.mark_milestone_complete(MilestoneType.TURN_EVALUATIONS)
+                except Exception as e:
+                    logger.error(f"Turn evaluations failed: {e}")
+                    raise
+        else:
+            try:
+                await self._execute_turn_evaluations(interaction_log)
+                await self.progress_handler.mark_milestone_complete(MilestoneType.TURN_EVALUATIONS)
+            except Exception as e:
+                logger.error(f"Turn evaluations failed: {e}")
+                raise
 
     async def _execute_node_evaluations_with_progress(self, interaction_log: List[InteractionLog]) -> None:
-        try:
-            await self._execute_node_evaluations(interaction_log)
-            await self.progress_handler.mark_milestone_complete(MilestoneType.NODE_EVALUATIONS)
-        except Exception as e:
-            logger.error(f"Node evaluations failed: {e}")
-            raise
+        tracer = TracingManager().get_tracer()
+        if tracer is not None:
+            with tracer.start_as_current_span("eval/node"):  # type: ignore
+                try:
+                    await self._execute_node_evaluations(interaction_log)
+                    await self.progress_handler.mark_milestone_complete(MilestoneType.NODE_EVALUATIONS)
+                except Exception as e:
+                    logger.error(f"Node evaluations failed: {e}")
+                    raise
+        else:
+            try:
+                await self._execute_node_evaluations(interaction_log)
+                await self.progress_handler.mark_milestone_complete(MilestoneType.NODE_EVALUATIONS)
+            except Exception as e:
+                logger.error(f"Node evaluations failed: {e}")
+                raise
 
     async def _execute_intent_evaluations_with_progress(self, interaction_log: List[InteractionLog]) -> None:
-        try:
-            await self._execute_intent_evaluations(interaction_log)
-            await self.progress_handler.mark_milestone_complete(MilestoneType.INTENT_EVALUATIONS)
-        except Exception as e:
-            logger.error(f"Intent evaluations failed: {e}")
-            raise
+        tracer = TracingManager().get_tracer()
+        if tracer is not None:
+            with tracer.start_as_current_span("eval/intent"):  # type: ignore
+                try:
+                    await self._execute_intent_evaluations(interaction_log)
+                    await self.progress_handler.mark_milestone_complete(MilestoneType.INTENT_EVALUATIONS)
+                except Exception as e:
+                    logger.error(f"Intent evaluations failed: {e}")
+                    raise
+        else:
+            try:
+                await self._execute_intent_evaluations(interaction_log)
+                await self.progress_handler.mark_milestone_complete(MilestoneType.INTENT_EVALUATIONS)
+            except Exception as e:
+                logger.error(f"Intent evaluations failed: {e}")
+                raise
 
     async def _execute_conversation_evaluations_with_progress(self, messages: List[Message]) -> None:
-        try:
-            await self._execute_conversation_evaluations(messages)
-            await self.progress_handler.mark_milestone_complete(MilestoneType.CONVERSATION_EVALUATIONS)
-        except Exception as e:
-            logger.error(f"Conversation evaluations failed: {e}")
-            raise
+        tracer = TracingManager().get_tracer()
+        if tracer is not None:
+            with tracer.start_as_current_span("eval/flow"):  # type: ignore
+                try:
+                    await self._execute_conversation_evaluations(messages)
+                    await self.progress_handler.mark_milestone_complete(MilestoneType.CONVERSATION_EVALUATIONS)
+                except Exception as e:
+                    logger.error(f"Conversation evaluations failed: {e}")
+                    raise
+        else:
+            try:
+                await self._execute_conversation_evaluations(messages)
+                await self.progress_handler.mark_milestone_complete(MilestoneType.CONVERSATION_EVALUATIONS)
+            except Exception as e:
+                logger.error(f"Conversation evaluations failed: {e}")
+                raise
 
     async def _execute_turn_evaluations(self, interaction_log: List[InteractionLog]) -> None:
         message_history: List[Message] = []
@@ -243,6 +287,66 @@ class LLMEvaluator:
                 for failed_rule in turn_result.failed_rules:
                     if failed_rule.node_name:
                         await self.failed_rules.add_failed_turn_rule(failed_rule.node_name, failed_rule)
+                # Emit Phoenix spans for each rule result (safe no-op if tracing disabled)
+                for rr in turn_result.rule_results:
+                    try:
+                        # nest internal spans under eval/turn/internal
+                        local_tracer = TracingManager().get_tracer()
+                        if local_tracer is not None:
+                            with local_tracer.start_as_current_span("eval/turn/internal"):  # type: ignore
+                                log_rule_evaluation_span(
+                                    tenant_id=self.context.tenant_id,
+                                    agent_id=self.context.agent_id,
+                                    run_id=self.context.run_id,
+                                    category="turn",
+                                    node_name=interaction.llm_response.node,
+                                    rule_result=rr,
+                                    input_text=interaction.user_message,
+                                    output_text=interaction.llm_response.raw_content,
+                                    source="internal",
+                                )
+                        else:
+                            log_rule_evaluation_span(
+                                tenant_id=self.context.tenant_id,
+                                agent_id=self.context.agent_id,
+                                run_id=self.context.run_id,
+                                category="turn",
+                                node_name=interaction.llm_response.node,
+                                rule_result=rr,
+                                input_text=interaction.user_message,
+                                output_text=interaction.llm_response.raw_content,
+                                source="internal",
+                            )
+                        # nest custom rubric under eval/turn/custom_rubric
+                        if local_tracer is not None:
+                            with local_tracer.start_as_current_span("eval/turn/custom_rubric"):  # type: ignore
+                                await maybe_run_rubric_for_rule(
+                                    tenant_id=self.context.tenant_id,
+                                    agent_id=self.context.agent_id,
+                                    run_id=self.context.run_id,
+                                    category="turn",
+                                    node_name=interaction.llm_response.node,
+                                    rule_name=(rr.rule.name if hasattr(rr, "rule") else "unknown"),
+                                    rubric=(rr.rule.instruction if hasattr(rr, "rule") else ""),
+                                    input_text=interaction.user_message,
+                                    output_text=interaction.llm_response.raw_content,
+                                    context_text=Trinity.get_conversation_str(message_history),
+                                )
+                        else:
+                            await maybe_run_rubric_for_rule(
+                                tenant_id=self.context.tenant_id,
+                                agent_id=self.context.agent_id,
+                                run_id=self.context.run_id,
+                                category="turn",
+                                node_name=interaction.llm_response.node,
+                                rule_name=(rr.rule.name if hasattr(rr, "rule") else "unknown"),
+                                rubric=(rr.rule.instruction if hasattr(rr, "rule") else ""),
+                                input_text=interaction.user_message,
+                                output_text=interaction.llm_response.raw_content,
+                                context_text=Trinity.get_conversation_str(message_history),
+                            )
+                    except Exception:
+                        pass
                 turn_evaluations.append(
                     GranularEvaluationResults(
                         category=Category.Turn,
@@ -284,13 +388,16 @@ class LLMEvaluator:
 
     async def _execute_node_evaluations(self, interaction_log: List[InteractionLog]) -> None:
         node_blocks = await self._identify_node_blocks(interaction_log)
+        logger.info(f"Node blocks found for evaluation: {node_blocks}")
         if not node_blocks:
             logger.info("No node blocks found for evaluation")
             return
         node_evaluations: List[GranularEvaluationResults] = []
         for node_block in node_blocks:
+            logger.info(f"Evaluating node block: {node_block}")
             node_name = node_block.node_name
             node = self.nodes_under_evaluation.get(node_name)
+            logger.info(f"Node found for evaluation: {node}")
             if not node or not node.evaluation_rules:
                 continue
             node_result = await NodeEvaluationStrategy(self.auto_refine_model_params).evaluate(
@@ -327,6 +434,44 @@ class LLMEvaluator:
                 for failed_rule in intent_result.failed_rules:
                     if failed_rule.node_name:
                         await self.failed_rules.add_failed_intent_rule(failed_rule.node_name, failed_rule)
+                for rr in intent_result.rule_results:
+                    try:
+                        log_rule_evaluation_span(
+                            tenant_id=self.context.tenant_id,
+                            agent_id=self.context.agent_id,
+                            run_id=self.context.run_id,
+                            category="intent",
+                            node_name=interaction.llm_response.intent_detector,
+                            rule_result=rr,
+                            input_text=Trinity.get_conversation_str(message_history),
+                            output_text=interaction.llm_response.raw_content,
+                            source="internal",
+                        )
+                        try:
+                            variables_dict = {
+                                "user_message": interaction.user_message,
+                                "detected_intent": interaction.llm_response.intent,
+                                "message_history": Trinity.get_conversation_str(message_history),
+                                "valid_intents": valid_intents.get(interaction.llm_response.intent_detector, []),
+                            }
+                            intent_eval_prompt_template = Trinity.get_intent_evaluation_prompt()
+                            intent_prompt = Trinity.replace_variables(intent_eval_prompt_template, variables_dict)
+                        except Exception:
+                            intent_prompt = Trinity.get_conversation_str(message_history)
+                        await maybe_run_rubric_for_rule(
+                            tenant_id=self.context.tenant_id,
+                            agent_id=self.context.agent_id,
+                            run_id=self.context.run_id,
+                            category="intent",
+                            node_name=interaction.llm_response.intent_detector,
+                            rule_name=(rr.rule.name if hasattr(rr, "rule") else "Evaluate intent"),
+                            rubric=(rr.rule.instruction if hasattr(rr, "rule") else "Validate detected intent against conversation and valid intents."),
+                            input_text=None,
+                            output_text=interaction.llm_response.raw_content,
+                            context_text=intent_prompt,
+                        )
+                    except Exception:
+                        pass
                 intent_evaluations.append(
                     GranularEvaluationResults(
                         category=Category.Intent,
@@ -353,6 +498,65 @@ class LLMEvaluator:
             for failed_rule in conversation_result.failed_rules:
                 await self.failed_rules.add_failed_conversation_rule(failed_rule)
             input_text = Trinity.get_conversation_str(messages)
+            for rr in conversation_result.rule_results:
+                try:
+                    tracer = TracingManager().get_tracer()
+                    if tracer is not None:
+                        with tracer.start_as_current_span("eval/flow/internal"):  # type: ignore
+                            log_rule_evaluation_span(
+                                tenant_id=self.context.tenant_id,
+                                agent_id=self.context.agent_id,
+                                run_id=self.context.run_id,
+                                category="flow",
+                                node_name="conversation",
+                                rule_result=rr,
+                                input_text=input_text,
+                                source="internal",
+                            )
+                        with tracer.start_as_current_span("eval/flow/custom_rubric"):  # type: ignore
+                            await maybe_run_rubric_for_rule(
+                                tenant_id=self.context.tenant_id,
+                                agent_id=self.context.agent_id,
+                                run_id=self.context.run_id,
+                                category="flow",
+                                node_name="conversation",
+                                rule_name=(rr.rule.name if hasattr(rr, "rule") else "unknown"),
+                                rubric=(rr.rule.instruction if hasattr(rr, "rule") else ""),
+                                input_text=None,
+                                output_text=None,
+                                context_text=input_text,
+                            )
+                    else:
+                        log_rule_evaluation_span(
+                            tenant_id=self.context.tenant_id,
+                            agent_id=self.context.agent_id,
+                            run_id=self.context.run_id,
+                            category="flow",
+                            node_name="conversation",
+                            rule_result=rr,
+                            input_text=input_text,
+                            source="internal",
+                        )
+                        await maybe_run_rubric_for_rule(
+                            tenant_id=self.context.tenant_id,
+                            agent_id=self.context.agent_id,
+                            run_id=self.context.run_id,
+                            category="flow",
+                            node_name="conversation",
+                            rule_name=(rr.rule.name if hasattr(rr, "rule") else "unknown"),
+                            rubric=(rr.rule.instruction if hasattr(rr, "rule") else ""),
+                            input_text=None,
+                            output_text=None,
+                            context_text=input_text,
+                        )
+                    await maybe_run_oob_evals_for_flow(
+                        tenant_id=self.context.tenant_id,
+                        agent_id=self.context.agent_id,
+                        run_id=self.context.run_id,
+                        conversation_context=input_text,
+                    )
+                except Exception:
+                    pass
             conversation_evaluation = GranularEvaluationResults(category=Category.Flow, input_text=input_text, node="conversation", rule_results=conversation_result.rule_results)
             await self.eval_state_manager.update_evaluations("flow_level_evaluations", [conversation_evaluation])
 

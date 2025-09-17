@@ -11,6 +11,7 @@ from deusauditron.schemas.autogen.references.evaluation_result_schema import Sta
 from deusauditron.schemas.shared_models.models import AgentEvalRequest
 
 from deusauditron.eval.eval_worker import LLMEvaluator
+from deusauditron.config import TracingManager
 
 
 class Auditron:
@@ -111,7 +112,13 @@ class Auditron:
         )
         try:
             evaluator = LLMEvaluator(request)
-            await evaluator.evaluate()
+            tracer = TracingManager().get_tracer()
+            if tracer is not None:
+                span_name = f"eval/{request.tenant_id}/{request.agent_id}/{request.run_id}"
+                with tracer.start_as_current_span(span_name):  # type: ignore
+                    await evaluator.evaluate()
+            else:
+                await evaluator.evaluate()
             logger.info(f"## Deusauditron: evaluation completed {request.composite_key}")
         except Exception as ex:
             logger.error(f"[Deusauditron ERROR] in _handle_eval_request: {ex}")
