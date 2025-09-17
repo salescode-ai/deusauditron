@@ -59,7 +59,6 @@ class TracingManager:
             )
             self._tracer = tracer_provider.get_tracer("Deusauditron")
             
-            # Instrument LiteLLM for tracing
             from openinference.instrumentation.litellm import LiteLLMInstrumentor
             LiteLLMInstrumentor().instrument(tracer_provider=tracer_provider)
             

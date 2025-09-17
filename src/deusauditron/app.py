@@ -42,6 +42,7 @@ async def lifespan(app: FastAPI):
         # Initialize tracing if enabled
         if config.tracing.enabled:
             TracingManager().get_tracer()
+            litellm.callbacks = ["arize"]
             logger.info("Tracing initialized with Phoenix")
 
         engine = Auditron(queue_backend=q_backend, lock_manager=lock_mgr)
