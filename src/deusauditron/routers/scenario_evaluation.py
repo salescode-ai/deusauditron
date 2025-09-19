@@ -1,7 +1,6 @@
 import os
 import uuid
 import json
-from fsspec.registry import known_implementations
 import phoenix as px
 import nest_asyncio
 from typing import Dict, Any, List
@@ -11,11 +10,10 @@ from fastapi import HTTPException
 from fastapi import status
 from phoenix.experiments import run_experiment
 from phoenix.experiments.types import Example
-from phoenix.experiments.evaluators import create_evaluator
-from phoenix.experiments.types import AnnotatorKind
+from phoenix.experiments.types import EvaluationResult
 
 from deusauditron.app_logging.context import set_logging_context
-from deusauditron.schemas.shared_models.models import ScenarioPayload, TaskPayload, Message
+from deusauditron.schemas.shared_models.models import ScenarioPayload, Message
 from deusauditron.deusmachine_adapter.dm_adapter import DMAdapter
 from deusauditron.eval.eval_utils import EvaluationUtils
 from deusauditron.schemas.shared_models.models import MessageRole
@@ -58,13 +56,17 @@ async def run_scenario(payload: ScenarioPayload):
         )
         return final_output
 
-    @create_evaluator(name="scenario_evaluator", kind=AnnotatorKind.LLM)
-    async def scenario_evaluator(output, expected):
+    async def scenario_evaluator(output, expected) -> EvaluationResult:
         expected_output = expected.get("Output", "")
         final_output = output
 
         response = await EvaluationUtils().custom_evaluator(final_output, expected_output, dm_adapter)
-        return response
+        evaluation_result = EvaluationResult(
+            score=1.0 if response.get("result", "UNDEFINED") == "PASS" else 0.0,
+            label=response.get("result", "UNDEFINED"),
+            explanation=response.get("reasoning", "UNDEFINED"),
+        )
+        return evaluation_result
     
     experiment = run_experiment(
         dataset=dataset,
