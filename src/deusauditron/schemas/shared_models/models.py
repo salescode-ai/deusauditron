@@ -490,6 +490,8 @@ class ScenarioPayload(BaseModel):
     blueprint: str = Field(..., description="Agent blueprint identifier")
     replay: bool = Field(default=False, description="Whether to replay the scenario")
     dataset_name: str = Field(..., description="The name of the dataset")
+    agent_name: str = Field(..., description="The name of the agent")
+    experiment_name: str = Field(..., description="The name of the experiment")
 
 
 class TaskPayload(BaseModel):

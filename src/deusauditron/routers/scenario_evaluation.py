@@ -68,13 +68,21 @@ async def run_scenario(payload: ScenarioPayload):
         )
         return evaluation_result
     
-    experiment = run_experiment(
-        dataset=dataset,
-        task=scenario_task,
-        evaluators=[scenario_evaluator],
-    )
-    
-    return {"sucess": True}
+    try:
+        experiment = run_experiment(
+            dataset=dataset,
+            task=scenario_task,
+            evaluators=[scenario_evaluator],
+            experiment_metadata={
+                "agent_name": payload.agent_name,
+                "experiment_name": payload.experiment_name
+            },
+        )
+        return {"sucess": True, "experiment_id": experiment.id}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 async def run_task(
