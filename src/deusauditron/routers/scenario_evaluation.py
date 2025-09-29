@@ -78,7 +78,7 @@ async def run_scenario(payload: ScenarioPayload):
                 "experiment_name": payload.experiment_name
             },
         )
-        return {"sucess": True, "experiment_id": experiment.id}
+        return {"success": True, "experiment_id": experiment.id}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
