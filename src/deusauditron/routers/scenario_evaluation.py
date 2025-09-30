@@ -40,33 +40,53 @@ async def run_scenario(payload: ScenarioPayload):
     dm_adapter = DMAdapter()
 
     async def scenario_task(example: Example) -> str:
-        transcript_dicts = json.loads(str(example.input.get("Input", ""))).get("messages", [])
-        transcript = [Message(**msg_dict) for msg_dict in transcript_dicts]
-        metadata = json.loads(str(example.metadata.get("Meta Data", ""))).get("catalogs", {})
-        dynamic_data: Dict[str, str] = {}
-        for key, value in metadata.items():
-            dynamic_data[key] = json.dumps(value, indent=2, ensure_ascii=False)
+        try:
+            transcript_dicts = json.loads(str(example.input.get("Input", ""))).get("messages", [])
+            transcript = [Message(**msg_dict) for msg_dict in transcript_dicts]
+            metadata = json.loads(str(example.metadata.get("Meta Data", ""))).get("catalogs", {})
+            dynamic_data: Dict[str, str] = {}
+            for key, value in metadata.items():
+                dynamic_data[key] = json.dumps(value, indent=2, ensure_ascii=False)
 
-        final_output = await run_task(
-            metadata=payload.metadata,
-            blueprint=payload.blueprint,
-            dynamic_data=dynamic_data,
-            replay=payload.replay,
-            transcript=transcript,
-        )
-        return final_output
+            final_output = await run_task(
+                metadata=payload.metadata,
+                blueprint=payload.blueprint,
+                dynamic_data=dynamic_data,
+                replay=payload.replay,
+                transcript=transcript,
+            )
+            return final_output
+        except Exception as e:
+            logger.error(f"Error in scenario_task: {str(e)}")
+            return f"ERROR: {str(e)}"
 
     async def scenario_evaluator(output, expected) -> EvaluationResult:
-        expected_output = expected.get("Output", "")
-        final_output = output
+        try:
+            expected_output = expected.get("Output", "")
+            final_output = output
 
-        response = await EvaluationUtils().custom_evaluator(final_output, expected_output, dm_adapter)
-        evaluation_result = EvaluationResult(
-            score=1.0 if response.get("result", "UNDEFINED") == "PASS" else 0.0,
-            label=response.get("result", "UNDEFINED"),
-            explanation=response.get("reasoning", "UNDEFINED"),
-        )
-        return evaluation_result
+            if isinstance(final_output, str) and final_output.startswith("ERROR:"):
+                error_message = final_output.replace("ERROR:", "").strip()
+                return EvaluationResult(
+                    score=0.0,
+                    label="ERROR",
+                    explanation=f"Task execution failed: {error_message}",
+                )
+
+            response = await EvaluationUtils().custom_evaluator(final_output, expected_output, dm_adapter)
+            evaluation_result = EvaluationResult(
+                score=1.0 if response.get("result", "UNDEFINED") == "PASS" else 0.0,
+                label=response.get("result", "UNDEFINED"),
+                explanation=response.get("reasoning", "UNDEFINED"),
+            )
+            return evaluation_result
+        except Exception as e:
+            logger.error(f"Error in scenario_evaluator: {str(e)}")
+            return EvaluationResult(
+                score=0.0,
+                label="ERROR",
+                explanation=f"Evaluation failed: {str(e)}",
+            )
     
     try:
         experiment = run_experiment(
@@ -97,6 +117,7 @@ async def run_task(
     run_id = str(uuid.uuid4())
     set_logging_context(tenant_id, agent_id, run_id)
 
+    dm_adapter = None
     try:
         dm_adapter = DMAdapter()
         await dm_adapter.create_agent(
@@ -138,19 +159,19 @@ async def run_task(
                     user_input=message.content if isinstance(message.content, str) else "",
                 )
 
-        await dm_adapter.delete_agent(
-            tenant_id=tenant_id, agent_id=agent_id, run_id=run_id
-        )
-
         if current_output is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="No output generated from agent execution"
-            )
+            raise Exception("No output generated from agent execution")
 
         final_output = current_output[0]["content"]
         return final_output
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        logger.error(f"Error in run_task: {str(e)}")
+        raise e
+    finally:
+        if dm_adapter:
+            try:
+                await dm_adapter.delete_agent(
+                    tenant_id=tenant_id, agent_id=agent_id, run_id=run_id
+                )
+            except Exception as e:
+                logger.info(f"Falied to delete agent: {str(e)}")
