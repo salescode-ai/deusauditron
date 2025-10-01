@@ -109,6 +109,7 @@ metadata = {
     }
 }
 
+# create a new dataset
 dataset = client.datasets.create_dataset(
     name="docs-dataset",
     inputs=[{"Input": json.dumps(transcript, indent=2, ensure_ascii=False)}],
@@ -117,6 +118,14 @@ dataset = client.datasets.create_dataset(
 )
 
 print(dataset.id, dataset.name)
+
+# add new rows to an existing dataset
+client.datasets.add_examples_to_dataset(
+    dataset="docs-dataset2",
+    inputs=[{"Input": json.dumps(transcript, indent=2, ensure_ascii=False)}, {"Input": json.dumps(transcript, indent=2, ensure_ascii=False)}],
+    outputs=[{"Output": expected_output}, {"Output": expected_output}],
+    metadata=[{"Meta Data": json.dumps(metadata, indent=2, ensure_ascii=False)}, {"Meta Data": json.dumps(metadata, indent=2, ensure_ascii=False)}],
+)
 ```
 
 ### Read/Get a Dataset
