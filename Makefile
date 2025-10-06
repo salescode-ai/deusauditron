@@ -20,7 +20,7 @@ run-redis:
 	USE_REDIS=true REDIS_URL=redis://127.0.0.1:6379/0 make run
 
 test:
-	. venv/bin/activate && pytest -q
+	. venv/bin/activate && PYTHONPATH=src pytest -q
 
 lint:
 	. venv/bin/activate && ruff check .

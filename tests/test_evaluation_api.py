@@ -1,15 +1,10 @@
-import sys
 import uuid
-from pathlib import Path
 
 import pytest
 from httpx import AsyncClient, ASGITransport
 from fastapi import status
 
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from app import create_app
+from deusauditron.app import create_app
 
 
 @pytest.mark.asyncio
