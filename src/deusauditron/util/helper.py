@@ -1,10 +1,12 @@
 import json
 import os
 import re
+import boto3
 import textwrap
 import redis
 from typing import Any, Dict, List, Optional
 import importlib.resources as pkg_resources
+from urllib.parse import urlparse
 
 from deusauditron.config.config import get_config
 from deusauditron.app_logging.logger import logger
@@ -149,6 +151,69 @@ class Trinity:
 
     @staticmethod
     def write_to_s3(bucket_name: str, object_key: str, data: str) -> None:
-        # Optional: add real S3 here if desired; keep a stub for compatibility
-        raise RuntimeError("S3 write not implemented in Deusauditron helper")
+        """
+        Writes data to S3 using the provided bucket name and object key.
+        Args:
+            bucket_name (str): S3 bucket name
+            object_key (str): S3 object key (path)
+            data (str): Data to write to S3
+        Raises:
+            Exception: If file upload fails.
+        """
+        try:
+            logger.info(f"Writing file to S3: s3://{bucket_name}/{object_key}")
+            s3_client = boto3.client("s3")
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=object_key,
+                Body=data.encode("utf-8")
+            )
+            logger.info(f"Successfully wrote file to S3: s3://{bucket_name}/{object_key}")
+        except Exception as e:
+            logger.error(f"Error writing to S3: {e}")
+            raise
 
+    @staticmethod
+    def _parse_s3_url(s3_url):
+        """
+        Parses an S3 URL and extracts the bucket name and key.
+        Args:
+            s3_url (str): Full S3 URL (e.g., "s3://my-bucket/path/to/file.txt")
+        Returns:
+            tuple: (bucket_name, object_key)
+        """
+        parsed_url = urlparse(s3_url)
+        if parsed_url.scheme != "s3":
+            raise ValueError(
+                f"Invalid S3 URL: {s3_url}. Expected format: s3://<bucket-name>/<object-key>"
+            )
+        bucket_name = parsed_url.netloc
+        object_key = parsed_url.path.lstrip("/")  # Remove leading slash
+        return bucket_name, object_key
+
+    @staticmethod
+    async def aread_from_s3(s3_url, read_as_text=True) -> str:
+        return Trinity.read_from_s3(s3_url, read_as_text)
+
+    @staticmethod
+    def read_from_s3(s3_url, read_as_text=True) -> str:
+        """
+        Reads a file from S3 using the provided S3 URL.
+        Args:
+            s3_url (str): S3 URL of the file to read (e.g., "s3://my-bucket/path/to/file.txt").
+            read_as_text (bool): If True, reads the file as text; otherwise, reads it as binary.
+        Returns:
+            str or bytes: File content (string for text files, bytes for binary files).
+        Raises:
+            Exception: If file retrieval fails.
+        """
+        try:
+            logger.info(f"Reading file from S3: {s3_url}")
+            bucket_name, object_key = Trinity._parse_s3_url(s3_url)
+            s3_client = boto3.client("s3")
+            response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+            file_content = response["Body"].read()
+            return file_content.decode("utf-8") if read_as_text else file_content
+        except Exception as e:
+            logger.error(f"Error reading file from S3: {e}")
+            return ""

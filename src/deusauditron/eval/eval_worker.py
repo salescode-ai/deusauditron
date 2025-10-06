@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from deusauditron.app_logging.context import set_logging_context
 from deusauditron.app_logging.logger import logger
+from deusauditron.config import TracingManager
 from deusauditron.state.manager import StateManager
 from deusauditron.util.helper import Trinity
 from deusauditron.schemas.autogen.references.evaluation_result_schema import EvaluationResult, Status
@@ -194,36 +195,76 @@ class LLMEvaluator:
                 logger.error(f"Error in {evaluation_type} evaluation: {result}")
 
     async def _execute_turn_evaluations_with_progress(self, interaction_log: List[InteractionLog]) -> None:
-        try:
-            await self._execute_turn_evaluations(interaction_log)
-            await self.progress_handler.mark_milestone_complete(MilestoneType.TURN_EVALUATIONS)
-        except Exception as e:
-            logger.error(f"Turn evaluations failed: {e}")
-            raise
+        tracer = TracingManager().get_tracer()
+        if tracer is not None:
+            with tracer.start_as_current_span("eval/turn"):  # type: ignore
+                try:
+                    await self._execute_turn_evaluations(interaction_log)
+                    await self.progress_handler.mark_milestone_complete(MilestoneType.TURN_EVALUATIONS)
+                except Exception as e:
+                    logger.error(f"Turn evaluations failed: {e}")
+                    raise
+        else:
+            try:
+                await self._execute_turn_evaluations(interaction_log)
+                await self.progress_handler.mark_milestone_complete(MilestoneType.TURN_EVALUATIONS)
+            except Exception as e:
+                logger.error(f"Turn evaluations failed: {e}")
+                raise
 
     async def _execute_node_evaluations_with_progress(self, interaction_log: List[InteractionLog]) -> None:
-        try:
-            await self._execute_node_evaluations(interaction_log)
-            await self.progress_handler.mark_milestone_complete(MilestoneType.NODE_EVALUATIONS)
-        except Exception as e:
-            logger.error(f"Node evaluations failed: {e}")
-            raise
+        tracer = TracingManager().get_tracer()
+        if tracer is not None:
+            with tracer.start_as_current_span("eval/node"):  # type: ignore
+                try:
+                    await self._execute_node_evaluations(interaction_log)
+                    await self.progress_handler.mark_milestone_complete(MilestoneType.NODE_EVALUATIONS)
+                except Exception as e:
+                    logger.error(f"Node evaluations failed: {e}")
+                    raise
+        else:
+            try:
+                await self._execute_node_evaluations(interaction_log)
+                await self.progress_handler.mark_milestone_complete(MilestoneType.NODE_EVALUATIONS)
+            except Exception as e:
+                logger.error(f"Node evaluations failed: {e}")
+                raise
 
     async def _execute_intent_evaluations_with_progress(self, interaction_log: List[InteractionLog]) -> None:
-        try:
-            await self._execute_intent_evaluations(interaction_log)
-            await self.progress_handler.mark_milestone_complete(MilestoneType.INTENT_EVALUATIONS)
-        except Exception as e:
-            logger.error(f"Intent evaluations failed: {e}")
-            raise
+        tracer = TracingManager().get_tracer()
+        if tracer is not None:
+            with tracer.start_as_current_span("eval/intent"):  # type: ignore
+                try:
+                    await self._execute_intent_evaluations(interaction_log)
+                    await self.progress_handler.mark_milestone_complete(MilestoneType.INTENT_EVALUATIONS)
+                except Exception as e:
+                    logger.error(f"Intent evaluations failed: {e}")
+                    raise
+        else:
+            try:
+                await self._execute_intent_evaluations(interaction_log)
+                await self.progress_handler.mark_milestone_complete(MilestoneType.INTENT_EVALUATIONS)
+            except Exception as e:
+                logger.error(f"Intent evaluations failed: {e}")
+                raise
 
     async def _execute_conversation_evaluations_with_progress(self, messages: List[Message]) -> None:
-        try:
-            await self._execute_conversation_evaluations(messages)
-            await self.progress_handler.mark_milestone_complete(MilestoneType.CONVERSATION_EVALUATIONS)
-        except Exception as e:
-            logger.error(f"Conversation evaluations failed: {e}")
-            raise
+        tracer = TracingManager().get_tracer()
+        if tracer is not None:
+            with tracer.start_as_current_span("eval/flow"):  # type: ignore
+                try:
+                    await self._execute_conversation_evaluations(messages)
+                    await self.progress_handler.mark_milestone_complete(MilestoneType.CONVERSATION_EVALUATIONS)
+                except Exception as e:
+                    logger.error(f"Conversation evaluations failed: {e}")
+                    raise
+        else:
+            try:
+                await self._execute_conversation_evaluations(messages)
+                await self.progress_handler.mark_milestone_complete(MilestoneType.CONVERSATION_EVALUATIONS)
+            except Exception as e:
+                logger.error(f"Conversation evaluations failed: {e}")
+                raise
 
     async def _execute_turn_evaluations(self, interaction_log: List[InteractionLog]) -> None:
         message_history: List[Message] = []
@@ -293,9 +334,17 @@ class LLMEvaluator:
             node = self.nodes_under_evaluation.get(node_name)
             if not node or not node.evaluation_rules:
                 continue
-            node_result = await NodeEvaluationStrategy(self.auto_refine_model_params).evaluate(
-                self.context, {"node": node, "interaction_history": node_block.mini_interaction_logs}, self.node_eval_model_params
-            )
+            
+            tracer = TracingManager().get_tracer()
+            if tracer is not None:
+                with tracer.start_as_current_span(f"eval/node/{node_name}"): 
+                    node_result = await NodeEvaluationStrategy(self.auto_refine_model_params).evaluate(
+                        self.context, {"node": node, "interaction_history": node_block.mini_interaction_logs}, self.node_eval_model_params
+                    )
+            else:
+                node_result = await NodeEvaluationStrategy(self.auto_refine_model_params).evaluate(
+                    self.context, {"node": node, "interaction_history": node_block.mini_interaction_logs}, self.node_eval_model_params
+                )
             if node_result.rule_results:
                 for failed_rule in node_result.failed_rules:
                     if failed_rule.node_name:
