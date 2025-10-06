@@ -35,8 +35,6 @@ client = px.Client(
 @scenario_evaluation_router.post("")
 async def run_scenario(payload: ScenarioPayload):
     nest_asyncio.apply()
-    
-    dataset = client.get_dataset(name=payload.dataset_name)
     dm_adapter = DMAdapter()
 
     async def scenario_task(example: Example) -> str:
@@ -89,16 +87,20 @@ async def run_scenario(payload: ScenarioPayload):
             )
     
     try:
-        experiment = run_experiment(
-            dataset=dataset,
-            task=scenario_task,
-            evaluators=[scenario_evaluator],
-            experiment_metadata={
-                "agent_name": payload.agent_name,
-                "experiment_name": payload.experiment_name
-            },
-        )
-        return {"success": True, "experiment_id": experiment.id}
+        experiment_ids = []
+        for dataset_name in payload.dataset_names:
+            dataset = client.get_dataset(name=dataset_name)
+            experiment = run_experiment(
+                dataset=dataset,
+                task=scenario_task,
+                evaluators=[scenario_evaluator],
+                experiment_metadata={
+                    "agent_name": payload.agent_name,
+                    "experiment_name": payload.experiment_name
+                },
+            )
+            experiment_ids.append(experiment.id)
+        return {"success": True, "experiment_ids": experiment_ids}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
