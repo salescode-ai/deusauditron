@@ -165,7 +165,7 @@ async def get_evaluation(
             )
             try:
                 s3_url = f"s3://{evaluation_path}"
-                s3_content = Trinity.read_from_redis(s3_url)
+                s3_content = Trinity.read_from_s3(s3_url)
                 if s3_content:
                     eval_data = json.loads(s3_content)
                     eval_result = EvaluationResult(**eval_data)
