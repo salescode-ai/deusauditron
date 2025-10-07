@@ -1,5 +1,4 @@
 import os
-import httpx
 from phoenix.client import Client
 
 from fastapi import APIRouter
@@ -8,6 +7,7 @@ from fastapi import Query
 
 from deusauditron.app_logging.logger import logger
 from deusauditron.schemas.shared_models.models import AppendDatasetRowsPayload
+from deusauditron.util.phoenix_helper import PhoenixClient, get_datasets_helper
 
 phoenix_router = APIRouter(
     prefix="/phoenix",
@@ -20,18 +20,12 @@ client = Client(
     api_key=os.getenv("PHOENIX_API_KEY"),
 )
 
-def get_datasets_helper(filter: str = Query(default="")):
-    all_datasets = client.datasets.list()
-    filtered_datasets = []
-    for dataset in all_datasets:
-        if dataset["name"].startswith(filter) or dataset["name"].startswith("common/"):
-            filtered_datasets.append(dataset)
-    return filtered_datasets
+phoenix_client = PhoenixClient()
 
 @phoenix_router.get("/datasets")
 async def get_datasets(filter: str = Query(default="")):
     try:
-        filtered_datasets = get_datasets_helper(filter)
+        filtered_datasets = get_datasets_helper(client, filter)
         return {"success": True, "datasets": filtered_datasets}
     except Exception as e:
         logger.error(f"Error getting datasets: {e}")
@@ -68,16 +62,12 @@ async def append_dataset_rows(dataset_id: str, payload: AppendDatasetRowsPayload
 @phoenix_router.get("/experiments")
 async def get_experiments(filter: str = Query(default="")):
     try:
-        filtered_datasets = get_datasets_helper(filter)
+        filtered_datasets = get_datasets_helper(client, filter)
         all_experiments = []
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {os.getenv('PHOENIX_API_KEY')}"
-        }
-        async with httpx.AsyncClient(headers=headers) as client_http:
+        
+        async with phoenix_client.get_http_client() as client_http:
             for dataset in filtered_datasets:
-                base_url = os.getenv("PHOENIX_COLLECTOR_ENDPOINT")
-                experiments_url = f"{base_url}/v1/datasets/{dataset['id']}/experiments"
+                experiments_url = phoenix_client.get_experiments_url(dataset['id'])
                 response = await client_http.get(experiments_url)
                 if response.status_code == 200:
                     experiments_data = response.json()["data"]
@@ -90,4 +80,20 @@ async def get_experiments(filter: str = Query(default="")):
         return {"success": True, "experiments": all_experiments}
     except Exception as e:
         logger.error(f"Error getting experiments: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@phoenix_router.get("/experiments/{experiment_id}")
+async def get_experiment(experiment_id: str):
+    try:
+        async with phoenix_client.get_http_client() as client_http:
+            experiment_url = phoenix_client.get_experiment_url(experiment_id)
+            response = await client_http.get(experiment_url)
+            if response.status_code == 200:
+                experiment = response.json()
+                return {"success": True, "experiment": experiment}
+            else:
+                logger.warning(f"Failed to get experiment {experiment_id}: {response.status_code}")
+                raise HTTPException(status_code=500, detail=f"Failed to get experiment {experiment_id}: {response.status_code}")
+    except Exception as e:
+        logger.error(f"Error getting experiment: {e}")
         raise HTTPException(status_code=500, detail=str(e))
