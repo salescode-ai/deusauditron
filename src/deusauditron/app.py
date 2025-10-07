@@ -16,7 +16,7 @@ from deusauditron.app_logging.logger import logger
 
 from deusauditron.engine import Auditron
 from deusauditron.routers.evaluation import evaluation_router
-
+from deusauditron.routers.phoenix import phoenix_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -82,6 +82,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     prefix = "/api/v1"
     app.include_router(evaluation_router, prefix=prefix)
+    app.include_router(phoenix_router, prefix=prefix)
     return app
 
 

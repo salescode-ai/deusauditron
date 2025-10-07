@@ -10,3 +10,4 @@ python-dotenv==1.1.0
 arize-phoenix-otel==0.12.1
 openinference-instrumentation-litellm==0.1.24
 boto3==1.38.27
+arize-phoenix==11.24.1
