@@ -20,14 +20,18 @@ client = Client(
     api_key=os.getenv("PHOENIX_API_KEY"),
 )
 
+def get_datasets_helper(filter: str = Query(default="")):
+    all_datasets = client.datasets.list()
+    filtered_datasets = []
+    for dataset in all_datasets:
+        if dataset["name"].startswith(filter) or dataset["name"].startswith("common/"):
+            filtered_datasets.append(dataset)
+    return filtered_datasets
+
 @phoenix_router.get("/datasets")
 async def get_datasets(filter: str = Query(default="")):
     try:
-        all_datasets = client.datasets.list()
-        filtered_datasets = []
-        for dataset in all_datasets:
-            if dataset["name"].startswith(filter):
-                filtered_datasets.append(dataset)
+        filtered_datasets = get_datasets_helper(filter)
         return {"success": True, "datasets": filtered_datasets}
     except Exception as e:
         logger.error(f"Error getting datasets: {e}")
@@ -64,12 +68,7 @@ async def append_dataset_rows(dataset_id: str, payload: AppendDatasetRowsPayload
 @phoenix_router.get("/experiments")
 async def get_experiments(filter: str = Query(default="")):
     try:
-        all_datasets = client.datasets.list()
-        filtered_datasets = []
-        for dataset in all_datasets:
-            if dataset["name"].startswith(filter):
-                filtered_datasets.append(dataset)
-        
+        filtered_datasets = get_datasets_helper(filter)
         all_experiments = []
         headers = {
             "Content-Type": "application/json",
