@@ -1,7 +1,7 @@
 import os
 import uuid
 import json
-import phoenix as px
+from phoenix.client import Client
 import nest_asyncio
 from typing import Dict, Any, List
 
@@ -26,8 +26,8 @@ scenario_evaluation_router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-client = px.Client(
-    endpoint=os.getenv("PHOENIX_COLLECTOR_ENDPOINT"), 
+client = Client(
+    base_url=os.getenv("PHOENIX_COLLECTOR_ENDPOINT"), 
     api_key=os.getenv("PHOENIX_API_KEY")
 )
 
@@ -37,11 +37,13 @@ async def run_scenario(payload: ScenarioPayload):
     nest_asyncio.apply()
     dm_adapter = DMAdapter()
 
-    async def scenario_task(example: Example) -> str:
+    async def scenario_task(example: Example, fallback_last_node_name: str) -> str:
         try:
             transcript_dicts = json.loads(str(example.input.get("Input", ""))).get("messages", [])
             transcript = [Message(**msg_dict) for msg_dict in transcript_dicts]
-            metadata = json.loads(str(example.metadata.get("Meta Data", ""))).get("catalogs", {})
+            dataset_metadata = json.loads(str(example.metadata.get("Meta Data", "")))
+            metadata = dataset_metadata.get("catalogs", {})
+            last_node_name = dataset_metadata.get("last_node_name", "")
             dynamic_data: Dict[str, str] = {}
             for key, value in metadata.items():
                 dynamic_data[key] = json.dumps(value, indent=2, ensure_ascii=False)
@@ -52,6 +54,8 @@ async def run_scenario(payload: ScenarioPayload):
                 dynamic_data=dynamic_data,
                 replay=payload.replay,
                 transcript=transcript,
+                last_node_name=last_node_name,
+                fallback_last_node_name=fallback_last_node_name,
             )
             return final_output
         except Exception as e:
@@ -89,10 +93,15 @@ async def run_scenario(payload: ScenarioPayload):
     try:
         experiment_ids = []
         for dataset_name in payload.dataset_names:
-            dataset = client.get_dataset(name=dataset_name)
+            dataset = client.datasets.get_dataset(dataset=dataset_name)
+
+            async def scenario_task_helper(example: Example) -> str:
+                return await scenario_task(example, dataset.metadata.get("last_node_name", ""))
+
+            logger.info(f"Dataset metadata: {dataset.metadata}")
             experiment = run_experiment(
                 dataset=dataset,
-                task=scenario_task,
+                task=scenario_task_helper,
                 evaluators=[scenario_evaluator],
                 experiment_metadata={
                     "agent_name": payload.agent_name,
@@ -113,6 +122,8 @@ async def run_task(
     dynamic_data: Dict[str, str],
     replay: bool,
     transcript: List[Message],
+    last_node_name: str,
+    fallback_last_node_name: str,
 ):
     tenant_id = str(uuid.uuid4())
     agent_id = str(uuid.uuid4())
@@ -142,7 +153,10 @@ async def run_task(
                 else ""
             )
             messages = transcript[:-1]
-            last_node_name = messages[-1].metadata.get("node", "") if messages else ""
+            if not last_node_name:
+                last_node_name = messages[-1].metadata.get("node", "") if messages else ""
+            if not last_node_name:
+                last_node_name = fallback_last_node_name
             current_output = await dm_adapter.run_agent(
                 tenant_id=tenant_id,
                 agent_id=agent_id,
