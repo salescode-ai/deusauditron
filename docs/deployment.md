@@ -12,7 +12,7 @@ make run
 
 ```bash
 docker build -t deusauditron:latest .
-docker run -p 8080:8080 --env-file .env deusauditron:latest
+docker run -p 8081:8081 --env-file .env deusauditron:latest
 ```
 
 ## Configuration

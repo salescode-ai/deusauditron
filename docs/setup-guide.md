@@ -18,7 +18,7 @@ make install
 make run
 ```
 
-Service runs at http://localhost:8080/api/v1 (Swagger: http://localhost:8080/docs)
+Service runs at http://localhost:8081/api/v1 (Swagger: http://localhost:8081/docs)
 
 ## Running Tests
 
@@ -30,7 +30,7 @@ make test
 ## Optional Environment Variables
 
 - `HOST` (default: 0.0.0.0)
-- `PORT` (default: 8080)
+- `PORT` (default: 8081)
 - `REDIS_URL` (e.g., redis://localhost:6379/0)
 - `STATE_BACKEND` (local|redis; default based on config)
 - `QUEUE_BACKEND` (local|redis; default based on config)

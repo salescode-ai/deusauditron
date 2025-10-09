@@ -52,13 +52,13 @@ make venv
 source venv/bin/activate
 make install
 make run
-# Service at http://localhost:8080/api/v1 (docs at /docs)
+# Service at http://localhost:8081/api/v1 (docs at /docs)
 ```
 
 Manual run:
 
 ```bash
-uvicorn app:create_app --factory --host 0.0.0.0 --port 8080 --reload
+uvicorn app:create_app --factory --host 0.0.0.0 --port 8081 --reload
 ```
 
 ## API Overview
@@ -94,7 +94,7 @@ Refer to `docs/api-reference.md` for full details and models.
 Environment variables (common):
 
 - `HOST` (default: 0.0.0.0)
-- `PORT` (default: 8080)
+- `PORT` (default: 8081)
 - `CORS_ORIGINS` (comma-separated)
 - Backends: `STATE_BACKEND` | `QUEUE_BACKEND` | `LOCK_BACKEND` = `local` or `redis`
 - `REDIS_URL` (e.g., `redis://localhost:6379/0`)
@@ -119,7 +119,7 @@ See `docs/testing.md` for structure and guidance.
 make venv      # create virtualenv
 source venv/bin/activate
 make install   # install dependencies
-make run       # run service on 0.0.0.0:8080
+make run       # run service on 0.0.0.0:8081
 make test      # run pytest
 make lint      # linter
 make format    # formatter
@@ -141,7 +141,7 @@ Docker (example):
 
 ```bash
 docker build -t deusauditron:latest .
-docker run -p 8080:8080 --env-file .env deusauditron:latest
+docker run -p 8081:8081 --env-file .env deusauditron:latest
 ```
 
 See `docs/deployment.md` for more.

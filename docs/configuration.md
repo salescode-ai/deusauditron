@@ -5,7 +5,7 @@ Deusauditron reads configuration from environment variables.
 ## Core
 
 - `HOST` (default: 0.0.0.0)
-- `PORT` (default: 8080)
+- `PORT` (default: 8081)
 - `CORS_ORIGINS` (comma-separated)
 
 ## Backends
