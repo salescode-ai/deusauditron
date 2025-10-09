@@ -34,7 +34,7 @@ class TestPhoenixIntegration:
 
     @pytest.mark.asyncio
     async def test_get_datasets_without_filter(self, client):
-        response = await client.get("/api/v1/phoenix/datasets")
+        response = await client.get("/internal/api/v1/phoenix/datasets")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -45,7 +45,7 @@ class TestPhoenixIntegration:
     @pytest.mark.asyncio
     async def test_get_datasets_with_filter(self, client):
         filter_param = "common/"
-        response = await client.get(f"/api/v1/phoenix/datasets?filter={filter_param}")
+        response = await client.get(f"/internal/api/v1/phoenix/datasets?filter={filter_param}")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -60,7 +60,7 @@ class TestPhoenixIntegration:
     @pytest.mark.asyncio
     async def test_get_datasets_with_custom_filter(self, client):
         filter_param = "test"
-        response = await client.get(f"/api/v1/phoenix/datasets?filter={filter_param}")
+        response = await client.get(f"/internal/api/v1/phoenix/datasets?filter={filter_param}")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -70,7 +70,7 @@ class TestPhoenixIntegration:
 
     @pytest.mark.asyncio
     async def test_get_dataset_rows_valid_dataset(self, client):
-        datasets_response = await client.get("/api/v1/phoenix/datasets")
+        datasets_response = await client.get("/internal/api/v1/phoenix/datasets")
         assert datasets_response.status_code == status.HTTP_200_OK
         datasets = datasets_response.json()["datasets"]
         
@@ -79,7 +79,7 @@ class TestPhoenixIntegration:
         
         dataset_id = datasets[0]["id"]
         
-        response = await client.get(f"/api/v1/phoenix/datasets/{dataset_id}/rows")
+        response = await client.get(f"/internal/api/v1/phoenix/datasets/{dataset_id}/rows")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -90,13 +90,13 @@ class TestPhoenixIntegration:
     @pytest.mark.asyncio
     async def test_get_dataset_rows_invalid_dataset(self, client):
         invalid_dataset_id = "non-existent-dataset-id-123456"
-        response = await client.get(f"/api/v1/phoenix/datasets/{invalid_dataset_id}/rows")
+        response = await client.get(f"/internal/api/v1/phoenix/datasets/{invalid_dataset_id}/rows")
         
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     @pytest.mark.asyncio
     async def test_append_dataset_rows_valid_dataset(self, client):
-        datasets_response = await client.get("/api/v1/phoenix/datasets")
+        datasets_response = await client.get("/internal/api/v1/phoenix/datasets")
         assert datasets_response.status_code == status.HTTP_200_OK
         datasets = datasets_response.json()["datasets"]
         
@@ -112,7 +112,7 @@ class TestPhoenixIntegration:
         }
         
         response = await client.post(
-            f"/api/v1/phoenix/datasets/{dataset_id}/rows/append",
+            f"/internal/api/v1/phoenix/datasets/{dataset_id}/rows/append",
             json=payload
         )
         
@@ -123,7 +123,7 @@ class TestPhoenixIntegration:
 
     @pytest.mark.asyncio
     async def test_append_dataset_rows_mismatched_arrays(self, client):
-        datasets_response = await client.get("/api/v1/phoenix/datasets")
+        datasets_response = await client.get("/internal/api/v1/phoenix/datasets")
         assert datasets_response.status_code == status.HTTP_200_OK
         datasets = datasets_response.json()["datasets"]
         
@@ -139,7 +139,7 @@ class TestPhoenixIntegration:
         }
         
         response = await client.post(
-            f"/api/v1/phoenix/datasets/{dataset_id}/rows/append",
+            f"/internal/api/v1/phoenix/datasets/{dataset_id}/rows/append",
             json=payload
         )
         
@@ -147,7 +147,7 @@ class TestPhoenixIntegration:
 
     @pytest.mark.asyncio
     async def test_get_experiments_without_filter(self, client):
-        response = await client.get("/api/v1/phoenix/experiments")
+        response = await client.get("/internal/api/v1/phoenix/experiments")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -158,7 +158,7 @@ class TestPhoenixIntegration:
     @pytest.mark.asyncio
     async def test_get_experiments_with_filter(self, client):
         filter_param = "test-agent"
-        response = await client.get(f"/api/v1/phoenix/experiments?filter={filter_param}")
+        response = await client.get(f"/internal/api/v1/phoenix/experiments?filter={filter_param}")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -172,7 +172,7 @@ class TestPhoenixIntegration:
 
     @pytest.mark.asyncio
     async def test_get_experiment_by_id_valid(self, client):
-        experiments_response = await client.get("/api/v1/phoenix/experiments")
+        experiments_response = await client.get("/internal/api/v1/phoenix/experiments")
         assert experiments_response.status_code == status.HTTP_200_OK
         experiments = experiments_response.json()["experiments"]
         
@@ -181,7 +181,7 @@ class TestPhoenixIntegration:
         
         experiment_id = experiments[0]["id"]
         
-        response = await client.get(f"/api/v1/phoenix/experiments/{experiment_id}")
+        response = await client.get(f"/internal/api/v1/phoenix/experiments/{experiment_id}")
         
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -192,13 +192,13 @@ class TestPhoenixIntegration:
     @pytest.mark.asyncio
     async def test_get_experiment_by_id_invalid(self, client):
         invalid_experiment_id = "non-existent-experiment-id-12345"
-        response = await client.get(f"/api/v1/phoenix/experiments/{invalid_experiment_id}")
+        response = await client.get(f"/internal/api/v1/phoenix/experiments/{invalid_experiment_id}")
         
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     @pytest.mark.asyncio
     async def test_complete_workflow(self, client):
-        datasets_response = await client.get("/api/v1/phoenix/datasets")
+        datasets_response = await client.get("/internal/api/v1/phoenix/datasets")
         assert datasets_response.status_code == status.HTTP_200_OK
         datasets = datasets_response.json()["datasets"]
         
@@ -207,7 +207,7 @@ class TestPhoenixIntegration:
         
         dataset_id = datasets[0]["id"]
         
-        rows_before = await client.get(f"/api/v1/phoenix/datasets/{dataset_id}/rows")
+        rows_before = await client.get(f"/internal/api/v1/phoenix/datasets/{dataset_id}/rows")
         assert rows_before.status_code == status.HTTP_200_OK
         initial_row_count = len(rows_before.json()["rows"])
         
@@ -218,12 +218,12 @@ class TestPhoenixIntegration:
         }
         
         append_response = await client.post(
-            f"/api/v1/phoenix/datasets/{dataset_id}/rows/append",
+            f"/internal/api/v1/phoenix/datasets/{dataset_id}/rows/append",
             json=test_payload
         )
         assert append_response.status_code == status.HTTP_200_OK
         
-        rows_after = await client.get(f"/api/v1/phoenix/datasets/{dataset_id}/rows")
+        rows_after = await client.get(f"/internal/api/v1/phoenix/datasets/{dataset_id}/rows")
         assert rows_after.status_code == status.HTTP_200_OK
         final_row_count = len(rows_after.json()["rows"])
         
@@ -231,11 +231,11 @@ class TestPhoenixIntegration:
 
     @pytest.mark.asyncio
     async def test_multiple_datasets_filter(self, client):
-        response1 = await client.get("/api/v1/phoenix/datasets?filter=")
+        response1 = await client.get("/internal/api/v1/phoenix/datasets?filter=")
         assert response1.status_code == status.HTTP_200_OK
         all_datasets = response1.json()["datasets"]
         
-        response2 = await client.get("/api/v1/phoenix/datasets?filter=common/")
+        response2 = await client.get("/internal/api/v1/phoenix/datasets?filter=common/")
         assert response2.status_code == status.HTTP_200_OK
         common_datasets = response2.json()["datasets"]
         
@@ -243,14 +243,14 @@ class TestPhoenixIntegration:
 
     @pytest.mark.asyncio  
     async def test_experiments_dataset_correlation(self, client):
-        experiments_response = await client.get("/api/v1/phoenix/experiments")
+        experiments_response = await client.get("/internal/api/v1/phoenix/experiments")
         assert experiments_response.status_code == status.HTTP_200_OK
         experiments = experiments_response.json()["experiments"]
         
         if not experiments:
             pytest.skip("No experiments available in Phoenix to test with")
         
-        datasets_response = await client.get("/api/v1/phoenix/datasets")
+        datasets_response = await client.get("/internal/api/v1/phoenix/datasets")
         assert datasets_response.status_code == status.HTTP_200_OK
         datasets = datasets_response.json()["datasets"]
         
