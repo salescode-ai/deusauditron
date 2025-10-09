@@ -115,6 +115,7 @@ class Config(BaseModel):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     state: StateConfig = Field(default_factory=StateConfig)
     log_level: str = Field(default="DEBUG")
+    auth_validation_url: str = Field(default="https://dev-apimgmt.salescode.ai/v1/users/me")
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -147,6 +148,7 @@ class Config(BaseModel):
                 check_interval=float(os.getenv("STATE_CHECK_INTERVAL", "0.1")),
             ),
             log_level=os.getenv("DEUSAUDITRON_LOG_LEVEL", "DEBUG").upper(),
+            auth_validation_url=os.getenv("AUTH_VALIDATION_URL", "https://dev-apimgmt.salescode.ai/v1/users/me"),
         )
         logger.info("Loaded Deusauditron configuration: {}", config.model_dump_json(indent=2))
         return config

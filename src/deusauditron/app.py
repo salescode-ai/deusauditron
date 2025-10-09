@@ -2,7 +2,7 @@ import litellm
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from deusauditron.config import get_config, Config, TracingManager
@@ -13,6 +13,7 @@ from deusauditron.lock.redis import RedisLockManager
 from deusauditron.qbackends.local import LocalQueueBackend
 from deusauditron.qbackends.redis import RedisQueueBackend
 from deusauditron.app_logging.logger import logger
+from deusauditron.util.handler import get_authorization
 
 from deusauditron.engine import Auditron
 from deusauditron.routers.evaluation import evaluation_router
@@ -81,8 +82,20 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     )
 
     prefix = "/api/v1"
-    app.include_router(evaluation_router, prefix=prefix)
-    app.include_router(phoenix_router, prefix=prefix)
+    internal_prefix = "/internal/api/v1"
+    routers = [
+        evaluation_router,
+        phoenix_router,
+    ]
+    for router in routers:
+        app.include_router(
+            router, 
+            prefix=prefix, 
+            dependencies=[Depends(get_authorization)], 
+            tags=["External"]
+        )
+        app.include_router(router, prefix=internal_prefix, tags=["Internal"])
+
     return app
 
 
