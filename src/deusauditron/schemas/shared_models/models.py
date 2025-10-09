@@ -496,3 +496,25 @@ class User(BaseModel):
     name: Optional[str] = None
     organization: Optional[str] = None
     enabled: bool
+
+
+class ScenarioPayload(BaseModel):
+    """Payload for scenario endpoint."""
+
+    metadata: Dict[str, Any] = Field(..., description="Agent metadata")
+    blueprint: str = Field(..., description="Agent blueprint identifier")
+    replay: bool = Field(default=False, description="Whether to replay the scenario")
+    dataset_names: List[str] = Field(..., description="The names of the datasets", alias="datasetNames")
+    agent_name: str = Field(..., description="The name of the agent", alias="agentName")
+    experiment_name: str = Field(..., description="The name of the experiment", alias="experimentName")
+
+
+class TaskPayload(BaseModel):
+    """Payload for phoenix task."""
+
+    metadata: Dict[str, Any] = Field(..., description="Agent metadata")
+    blueprint: str = Field(..., description="Agent blueprint identifier")
+    transcript: List[Message] = Field(..., description="The transcript of the scenario")
+    expected_output: str = Field(..., description="The expected output of the scenario")
+    dynamic_data: Dict[str, str] = Field(..., description="The dynamic data of the scenario")
+    replay: bool = Field(default=False, description="Whether to replay the scenario")

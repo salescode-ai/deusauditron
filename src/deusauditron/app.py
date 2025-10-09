@@ -19,6 +19,8 @@ from deusauditron.engine import Auditron
 from deusauditron.routers.evaluation import evaluation_router
 from deusauditron.routers.phoenix import phoenix_router
 from deusauditron.routers.system import system_router
+from deusauditron.routers.scenario_evaluation import scenario_evaluation_router
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize the evaluation engine on startup and stop it on shutdown."""
@@ -87,6 +89,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         evaluation_router,
         phoenix_router,
         system_router,
+        scenario_evaluation_router,
     ]
     for router in routers:
         app.include_router(
