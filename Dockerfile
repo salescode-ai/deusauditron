@@ -31,8 +31,10 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY . ./
+COPY src/ ./src/
 
 EXPOSE 8081
 
-CMD ["uvicorn", "app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8081"]
+ENV PYTHONPATH=/app/src
+
+CMD ["uvicorn", "deusauditron.app:app", "--host", "0.0.0.0", "--port", "8081"]
