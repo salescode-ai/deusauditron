@@ -481,3 +481,9 @@ class MessageType(str, Enum):
     RUN_AGENT = "Run_Agent"
     UNKNOWN = "Unknown_Message_Type"
     ERROR = "Error_Processing_Request"
+
+
+class AppendDatasetRowsPayload(BaseModel):
+    inputs: List[str] = Field(..., description="The inputs to append to the dataset")
+    outputs: List[str] = Field(..., description="The outputs to append to the dataset")
+    metadata: List[str] = Field(..., description="The metadata to append to the dataset")
