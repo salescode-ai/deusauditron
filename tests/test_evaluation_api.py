@@ -15,7 +15,7 @@ async def test_evaluation_lifecycle(monkeypatch):
 
     # For this minimal test to pass, state must exist; in real tests we'd seed state.
     # Here we expect 404 for missing agent state.
-    url = f"/api/v1/agents/{tenant_id}/{agent_id}/{run_id}/evaluation"
+    url = f"/internal/api/v1/agents/{tenant_id}/{agent_id}/{run_id}/evaluation"
     application = create_app()
     transport = ASGITransport(app=application)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
