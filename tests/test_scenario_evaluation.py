@@ -55,7 +55,7 @@ class TestScenarioEvaluationIntegration:
 
 
     @pytest.fixture
-    def valid_scenario_payload(self):
+    def valid_scenario_payload_with_blueprint(self):
         return {
             "metadata": {
                 "outlet_id": "",
@@ -69,11 +69,25 @@ class TestScenarioEvaluationIntegration:
             "experimentName": "test-experiment"
         }
 
+    @pytest.fixture
+    def valid_scenario_payload_without_blueprint(self):
+        return {
+            "metadata": {
+                "outlet_id": "",
+                "outlet_name": "",
+                "agent_id": "",
+                "lob": ""
+            },
+            "datasetNames": ["kbpldemo/csv/testing"],
+            "agentName": "kbpldemo/csv/",
+            "experimentName": "test-experiment"
+        }
+
     @pytest.mark.asyncio
-    async def test_scenario_evaluation_with_valid_payload(self, client, valid_scenario_payload):
+    async def test_scenario_evaluation_with_valid_payload(self, client, valid_scenario_payload_with_blueprint):
         response = await client.post(
             "/internal/api/v1/scenario/run",
-            json=valid_scenario_payload
+            json=valid_scenario_payload_with_blueprint
         )
         
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_500_INTERNAL_SERVER_ERROR]
@@ -85,12 +99,12 @@ class TestScenarioEvaluationIntegration:
             assert isinstance(data["experiment_ids"], list)
 
     @pytest.mark.asyncio
-    async def test_scenario_evaluation_with_replay_mode(self, client, valid_scenario_payload):
-        valid_scenario_payload["replay"] = True
+    async def test_scenario_evaluation_with_replay_mode(self, client, valid_scenario_payload_with_blueprint):
+        valid_scenario_payload_with_blueprint["replay"] = True
         
         response = await client.post(
             "/internal/api/v1/scenario/run",
-            json=valid_scenario_payload
+            json=valid_scenario_payload_with_blueprint
         )
         
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_500_INTERNAL_SERVER_ERROR]
@@ -102,12 +116,12 @@ class TestScenarioEvaluationIntegration:
             assert isinstance(data["experiment_ids"], list)
 
     @pytest.mark.asyncio
-    async def test_scenario_evaluation_with_multiple_datasets(self, client, valid_scenario_payload):
-        valid_scenario_payload["datasetNames"] = ["kbpldemo/csv/testing", "SCAI Testing Dataset - 21 August"]
+    async def test_scenario_evaluation_with_multiple_datasets(self, client, valid_scenario_payload_with_blueprint):
+        valid_scenario_payload_with_blueprint["datasetNames"] = ["kbpldemo/csv/testing", "SCAI Testing Dataset - 21 August"]
         
         response = await client.post(
             "/internal/api/v1/scenario/run",
-            json=valid_scenario_payload
+            json=valid_scenario_payload_with_blueprint
         )
         
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_500_INTERNAL_SERVER_ERROR]
@@ -117,23 +131,54 @@ class TestScenarioEvaluationIntegration:
             assert len(data["experiment_ids"]) == 2
 
     @pytest.mark.asyncio
-    async def test_scenario_evaluation_with_nonexistent_dataset(self, client, valid_scenario_payload):
-        valid_scenario_payload["datasetNames"] = ["non-existent-dataset"]
+    async def test_scenario_evaluation_with_nonexistent_dataset(self, client, valid_scenario_payload_with_blueprint):
+        valid_scenario_payload_with_blueprint["datasetNames"] = ["non-existent-dataset"]
         
         response = await client.post(
             "/internal/api/v1/scenario/run",
-            json=valid_scenario_payload
+            json=valid_scenario_payload_with_blueprint
         )
         
-        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @pytest.mark.asyncio
-    async def test_scenario_evaluation_with_empty_dataset_list(self, client, valid_scenario_payload):
-        valid_scenario_payload["datasetNames"] = []
+    async def test_scenario_evaluation_with_empty_dataset_list(self, client, valid_scenario_payload_with_blueprint):
+        valid_scenario_payload_with_blueprint["datasetNames"] = []
         
         response = await client.post(
             "/internal/api/v1/scenario/run",
-            json=valid_scenario_payload
+            json=valid_scenario_payload_with_blueprint
         )
         
-        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.asyncio
+    async def test_scenario_evaluation_without_blueprint_with_auth(self, client, valid_scenario_payload_without_blueprint):
+        mgmt_token = os.getenv("MGMT_TOKEN")
+        if not mgmt_token:
+            pytest.skip("MGMT_TOKEN not set, skipping auth test")
+        
+        headers = {"Authorization": f"Bearer {mgmt_token}"}
+        
+        response = await client.post(
+            "/internal/api/v1/scenario/run",
+            json=valid_scenario_payload_without_blueprint,
+            headers=headers
+        )
+        
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_500_INTERNAL_SERVER_ERROR, status.HTTP_400_BAD_REQUEST]
+        
+        if response.status_code == status.HTTP_200_OK:
+            data = response.json()
+            assert data["success"] is True
+            assert "experiment_ids" in data
+            assert isinstance(data["experiment_ids"], list)
+
+    @pytest.mark.asyncio
+    async def test_scenario_evaluation_without_blueprint_no_auth(self, client, valid_scenario_payload_without_blueprint):
+        response = await client.post(
+            "/internal/api/v1/scenario/run",
+            json=valid_scenario_payload_without_blueprint
+        )
+        
+        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_400_BAD_REQUEST]

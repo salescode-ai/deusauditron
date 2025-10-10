@@ -143,6 +143,11 @@ async def run_scenario(
             )
             experiment_ids.append(experiment.id)
         return {"success": True, "experiment_ids": experiment_ids}
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Dataset not found: {e}"
+        )
     except Exception as e:
         raise e
 
