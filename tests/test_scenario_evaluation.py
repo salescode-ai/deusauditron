@@ -72,7 +72,7 @@ class TestScenarioEvaluationIntegration:
     @pytest.mark.asyncio
     async def test_scenario_evaluation_with_valid_payload(self, client, valid_scenario_payload):
         response = await client.post(
-            "/api/v1/scenario/run",
+            "/internal/api/v1/scenario/run",
             json=valid_scenario_payload
         )
         
@@ -89,7 +89,7 @@ class TestScenarioEvaluationIntegration:
         valid_scenario_payload["replay"] = True
         
         response = await client.post(
-            "/api/v1/scenario/run",
+            "/internal/api/v1/scenario/run",
             json=valid_scenario_payload
         )
         
@@ -106,7 +106,7 @@ class TestScenarioEvaluationIntegration:
         valid_scenario_payload["datasetNames"] = ["kbpldemo/csv/testing", "SCAI Testing Dataset - 21 August"]
         
         response = await client.post(
-            "/api/v1/scenario/run",
+            "/internal/api/v1/scenario/run",
             json=valid_scenario_payload
         )
         
@@ -121,7 +121,7 @@ class TestScenarioEvaluationIntegration:
         valid_scenario_payload["datasetNames"] = ["non-existent-dataset"]
         
         response = await client.post(
-            "/api/v1/scenario/run",
+            "/internal/api/v1/scenario/run",
             json=valid_scenario_payload
         )
         
@@ -132,7 +132,7 @@ class TestScenarioEvaluationIntegration:
         valid_scenario_payload["datasetNames"] = []
         
         response = await client.post(
-            "/api/v1/scenario/run",
+            "/internal/api/v1/scenario/run",
             json=valid_scenario_payload
         )
         
