@@ -18,7 +18,7 @@ from deusauditron.util.handler import get_authorization
 from deusauditron.engine import Auditron
 from deusauditron.routers.evaluation import evaluation_router
 from deusauditron.routers.phoenix import phoenix_router
-
+from deusauditron.routers.system import system_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize the evaluation engine on startup and stop it on shutdown."""
@@ -86,6 +86,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     routers = [
         evaluation_router,
         phoenix_router,
+        system_router,
     ]
     for router in routers:
         app.include_router(
