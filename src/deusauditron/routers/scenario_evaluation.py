@@ -3,7 +3,7 @@ import uuid
 import json
 from phoenix.client import Client
 import nest_asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import httpx
 
 from fastapi import APIRouter, Depends
@@ -38,15 +38,19 @@ client = Client(
 @scenario_evaluation_router.post("")
 async def run_scenario(
     payload: ScenarioPayload,
-    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))
 ):
     nest_asyncio.apply()
     dm_adapter = DMAdapter()
-    auth_header = f"Bearer {credentials.credentials.removeprefix('Bearer ')}"
 
     metadata = payload.metadata
     blueprint = payload.blueprint
     if not blueprint:
+        if credentials is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication credentials are required"
+            )
+        auth_header = f"Bearer {credentials.credentials.removeprefix('Bearer ')}"
         agent_name = payload.agent_name.split("/")[-2]
         response = httpx.get(
             f"{get_config().mgmt_url}/agents/{agent_name}", 
