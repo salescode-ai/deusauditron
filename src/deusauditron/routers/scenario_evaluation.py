@@ -91,6 +91,11 @@ async def run_scenario(payload: ScenarioPayload):
             )
     
     try:
+        if len(payload.dataset_names) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Dataset names are required"
+            )
+
         experiment_ids = []
         for dataset_name in payload.dataset_names:
             dataset = client.datasets.get_dataset(dataset=dataset_name)
