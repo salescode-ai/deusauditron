@@ -502,7 +502,7 @@ class ScenarioPayload(BaseModel):
     """Payload for scenario endpoint."""
 
     metadata: Dict[str, Any] = Field(..., description="Agent metadata")
-    blueprint: str = Field(..., description="Agent blueprint identifier")
+    blueprint: str = Field(default="", description="Agent blueprint identifier")
     replay: bool = Field(default=False, description="Whether to replay the scenario")
     dataset_names: List[str] = Field(..., description="The names of the datasets", alias="datasetNames")
     agent_name: str = Field(..., description="The name of the agent", alias="agentName")

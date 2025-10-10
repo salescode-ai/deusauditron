@@ -4,8 +4,10 @@ import json
 from phoenix.client import Client
 import nest_asyncio
 from typing import Dict, Any, List
+import httpx
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import HTTPException
 from fastapi import status
 from phoenix.experiments import run_experiment
@@ -18,6 +20,7 @@ from deusauditron.deusmachine_adapter.dm_adapter import DMAdapter
 from deusauditron.eval.eval_utils import EvaluationUtils
 from deusauditron.schemas.shared_models.models import MessageRole
 from deusauditron.app_logging.logger import logger
+from deusauditron.config import get_config
 
 
 scenario_evaluation_router = APIRouter(
@@ -33,24 +36,46 @@ client = Client(
 
 
 @scenario_evaluation_router.post("")
-async def run_scenario(payload: ScenarioPayload):
+async def run_scenario(
+    payload: ScenarioPayload,
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))
+):
     nest_asyncio.apply()
     dm_adapter = DMAdapter()
+    auth_header = f"Bearer {credentials.credentials.removeprefix('Bearer ')}"
+
+    metadata = payload.metadata
+    blueprint = payload.blueprint
+    if not blueprint:
+        agent_name = payload.agent_name.split("/")[-2]
+        response = httpx.get(
+            f"{get_config().mgmt_url}/agents/{agent_name}", 
+            headers={"Authorization": auth_header}
+        )
+        response.raise_for_status()
+        agent_config = response.json()
+        blueprint = agent_config.get("blueprint", "")
+    if not blueprint:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Blueprint not found for agent: {payload.agent_name}"
+        )
+    
+    await validate_agent(metadata, blueprint)
 
     async def scenario_task(example: Example, fallback_last_node_name: str) -> str:
         try:
             transcript_dicts = json.loads(str(example.input.get("Input", ""))).get("messages", [])
             transcript = [Message(**msg_dict) for msg_dict in transcript_dicts]
             dataset_metadata = json.loads(str(example.metadata.get("Meta Data", "")))
-            metadata = dataset_metadata.get("catalogs", {})
+            catalogs = dataset_metadata.get("catalogs", {})
             last_node_name = dataset_metadata.get("last_node_name", "")
             dynamic_data: Dict[str, str] = {}
-            for key, value in metadata.items():
+            for key, value in catalogs.items():
                 dynamic_data[key] = json.dumps(value, indent=2, ensure_ascii=False)
 
             final_output = await run_task(
-                metadata=payload.metadata,
-                blueprint=payload.blueprint,
+                metadata=metadata,
+                blueprint=blueprint,
                 dynamic_data=dynamic_data,
                 replay=payload.replay,
                 transcript=transcript,
@@ -93,7 +118,7 @@ async def run_scenario(payload: ScenarioPayload):
     try:
         if len(payload.dataset_names) == 0:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Dataset names are required"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Dataset names are required"
             )
 
         experiment_ids = []
@@ -103,7 +128,6 @@ async def run_scenario(payload: ScenarioPayload):
             async def scenario_task_helper(example: Example) -> str:
                 return await scenario_task(example, dataset.metadata.get("last_node_name", ""))
 
-            logger.info(f"Dataset metadata: {dataset.metadata}")
             experiment = run_experiment(
                 dataset=dataset,
                 task=scenario_task_helper,
@@ -116,9 +140,7 @@ async def run_scenario(payload: ScenarioPayload):
             experiment_ids.append(experiment.id)
         return {"success": True, "experiment_ids": experiment_ids}
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise e
 
 
 async def run_task(
@@ -196,3 +218,27 @@ async def run_task(
                 )
             except Exception as e:
                 logger.info(f"Falied to delete agent: {str(e)}")
+
+async def validate_agent(metadata: Dict[str, Any], blueprint: str):
+    try:
+        response = httpx.post(
+            get_config().deusmachina_url + "/schema/validate",
+            json={
+                "metadata": metadata,
+                "blueprint": blueprint,
+                "api_keys": {
+                    "groq": os.getenv("GROQ_API_KEY"),
+                    "openai": os.getenv("OPENAI_API_KEY"),
+                }
+            }
+        )
+        response.raise_for_status()
+        validation_result = response.json()
+        if validation_result.get("overall_passed", False) == True:
+            return True
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=validation_result
+            )
+    except Exception as e:
+        raise e
