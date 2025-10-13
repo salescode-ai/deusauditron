@@ -40,86 +40,86 @@ async def run_scenario(
     payload: ScenarioPayload,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))
 ):
-    nest_asyncio.apply()
-    dm_adapter = DMAdapter()
+    try:
+        nest_asyncio.apply()
+        dm_adapter = DMAdapter()
 
-    metadata = payload.metadata
-    blueprint = payload.blueprint
-    if not blueprint:
-        if credentials is None:
+        metadata = payload.metadata
+        blueprint = payload.blueprint
+        if not blueprint:
+            if credentials is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication credentials are required"
+                )
+            auth_header = f"Bearer {credentials.credentials.removeprefix('Bearer ')}"
+            agent_name = payload.agent_name.split("/")[-2]
+            response = httpx.get(
+                f"{get_config().mgmt_url}/agents/{agent_name}", 
+                headers={"Authorization": auth_header}
+            )
+            response.raise_for_status()
+            agent_config = response.json()
+            blueprint = agent_config.get("blueprint", "")
+        if not blueprint:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication credentials are required"
+                status_code=status.HTTP_400_BAD_REQUEST, detail=f"Blueprint not found for agent: {payload.agent_name}"
             )
-        auth_header = f"Bearer {credentials.credentials.removeprefix('Bearer ')}"
-        agent_name = payload.agent_name.split("/")[-2]
-        response = httpx.get(
-            f"{get_config().mgmt_url}/agents/{agent_name}", 
-            headers={"Authorization": auth_header}
-        )
-        response.raise_for_status()
-        agent_config = response.json()
-        blueprint = agent_config.get("blueprint", "")
-    if not blueprint:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Blueprint not found for agent: {payload.agent_name}"
-        )
-    
-    await validate_agent(metadata, blueprint)
+        
+        await validate_agent(metadata, blueprint)
 
-    async def scenario_task(example: Example, fallback_last_node_name: str) -> str:
-        try:
-            transcript_dicts = json.loads(str(example.input.get("Input", ""))).get("messages", [])
-            transcript = [Message(**msg_dict) for msg_dict in transcript_dicts]
-            dataset_metadata = json.loads(str(example.metadata.get("Meta Data", "")))
-            catalogs = dataset_metadata.get("catalogs", {})
-            last_node_name = dataset_metadata.get("last_node_name", "")
-            dynamic_data: Dict[str, str] = {}
-            for key, value in catalogs.items():
-                dynamic_data[key] = json.dumps(value, indent=2, ensure_ascii=False)
+        async def scenario_task(example: Example, fallback_last_node_name: str) -> str:
+            try:
+                transcript_dicts = json.loads(str(example.input.get("Input", ""))).get("messages", [])
+                transcript = [Message(**msg_dict) for msg_dict in transcript_dicts]
+                dataset_metadata = json.loads(str(example.metadata.get("Meta Data", "")))
+                catalogs = dataset_metadata.get("catalogs", {})
+                last_node_name = dataset_metadata.get("last_node_name", "")
+                dynamic_data: Dict[str, str] = {}
+                for key, value in catalogs.items():
+                    dynamic_data[key] = json.dumps(value, indent=2, ensure_ascii=False)
 
-            final_output = await run_task(
-                metadata=metadata,
-                blueprint=blueprint,
-                dynamic_data=dynamic_data,
-                replay=payload.replay,
-                transcript=transcript,
-                last_node_name=last_node_name,
-                fallback_last_node_name=fallback_last_node_name,
-            )
-            return final_output
-        except Exception as e:
-            logger.error(f"Error in scenario_task: {str(e)}")
-            return f"ERROR: {str(e)}"
+                final_output = await run_task(
+                    metadata=metadata,
+                    blueprint=blueprint,
+                    dynamic_data=dynamic_data,
+                    replay=payload.replay,
+                    transcript=transcript,
+                    last_node_name=last_node_name,
+                    fallback_last_node_name=fallback_last_node_name,
+                )
+                return final_output
+            except Exception as e:
+                logger.error(f"Error in scenario_task: {str(e)}")
+                return f"ERROR: {str(e)}"
 
-    async def scenario_evaluator(output, expected) -> EvaluationResult:
-        try:
-            expected_output = expected.get("Output", "")
-            final_output = output
+        async def scenario_evaluator(output, expected) -> EvaluationResult:
+            try:
+                expected_output = expected.get("Output", "")
+                final_output = output
 
-            if isinstance(final_output, str) and final_output.startswith("ERROR:"):
-                error_message = final_output.replace("ERROR:", "").strip()
+                if isinstance(final_output, str) and final_output.startswith("ERROR:"):
+                    error_message = final_output.replace("ERROR:", "").strip()
+                    return EvaluationResult(
+                        score=0.0,
+                        label="ERROR",
+                        explanation=f"Task execution failed: {error_message}",
+                    )
+
+                response = await EvaluationUtils().custom_evaluator(final_output, expected_output, dm_adapter)
+                evaluation_result = EvaluationResult(
+                    score=1.0 if response.get("result", "UNDEFINED") == "PASS" else 0.0,
+                    label=response.get("result", "UNDEFINED"),
+                    explanation=response.get("reasoning", "UNDEFINED"),
+                )
+                return evaluation_result
+            except Exception as e:
+                logger.error(f"Error in scenario_evaluator: {str(e)}")
                 return EvaluationResult(
                     score=0.0,
                     label="ERROR",
-                    explanation=f"Task execution failed: {error_message}",
+                    explanation=f"Evaluation failed: {str(e)}",
                 )
-
-            response = await EvaluationUtils().custom_evaluator(final_output, expected_output, dm_adapter)
-            evaluation_result = EvaluationResult(
-                score=1.0 if response.get("result", "UNDEFINED") == "PASS" else 0.0,
-                label=response.get("result", "UNDEFINED"),
-                explanation=response.get("reasoning", "UNDEFINED"),
-            )
-            return evaluation_result
-        except Exception as e:
-            logger.error(f"Error in scenario_evaluator: {str(e)}")
-            return EvaluationResult(
-                score=0.0,
-                label="ERROR",
-                explanation=f"Evaluation failed: {str(e)}",
-            )
     
-    try:
         if len(payload.dataset_names) == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Dataset names are required"
@@ -148,8 +148,19 @@ async def run_scenario(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Dataset not found: {e}"
         )
+    except httpx.ConnectError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Phoenix service is unavailable. Please ensure the service is running and You have set the PHOENIX_COLLECTOR_ENDPOINT and PHOENIX_API_KEY environment variables."
+        )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise e
+        logger.error(f"Unexpected error in run_scenario: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during scenario evaluation"
+        )
 
 
 async def run_task(
@@ -249,5 +260,11 @@ async def validate_agent(metadata: Dict[str, Any], blueprint: str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=validation_result
             )
+    except httpx.ConnectError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Deusmachina service is unavailable. Please ensure the service is running."
+        )
     except Exception as e:
+        logger.error(f"Unexpected error during agent validation: {str(e)}")
         raise e
