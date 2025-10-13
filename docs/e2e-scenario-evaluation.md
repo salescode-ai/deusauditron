@@ -155,7 +155,10 @@ payload = {
         "key1": "value1",
     },
     "blueprint": "any agent blueprint",
-    "replay": False  # Set to True for message-by-message replay
+    "replay": False,  # Set to True for message-by-message replay
+    # Optional (will be stored in Phoenix Experiment metadata)
+    "outlet_id": "outlet-id",
+    "outlet_name": "outlet-name"
 }
 ```
 
@@ -168,7 +171,7 @@ Trigger from UI using the above payload and endpoint `/scenario/run`.
 ```json
 {
   "success": true,
-  "experiment_id": "abc"
+  "experiment_id": ["abc"]
 }
 ```
 
