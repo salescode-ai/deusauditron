@@ -85,13 +85,12 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     prefix = "/api/v1"
     internal_prefix = "/internal/api/v1"
-    routers = [
+    protected_routers = [
         evaluation_router,
         phoenix_router,
-        system_router,
         scenario_evaluation_router,
     ]
-    for router in routers:
+    for router in protected_routers:
         app.include_router(
             router, 
             prefix=prefix, 
@@ -99,6 +98,8 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
             tags=["External"]
         )
         app.include_router(router, prefix=internal_prefix, tags=["Internal"])
+    
+    app.include_router(system_router, prefix=prefix, tags=["External"])
 
     return app
 
