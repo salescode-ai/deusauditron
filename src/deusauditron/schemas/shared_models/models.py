@@ -507,6 +507,8 @@ class ScenarioPayload(BaseModel):
     dataset_names: List[str] = Field(..., description="The names of the datasets", alias="datasetNames")
     agent_name: str = Field(..., description="The name of the agent", alias="agentName")
     experiment_name: str = Field(..., description="The name of the experiment", alias="experimentName")
+    outlet_id: Optional[str] = Field(default=None, description="The id of the outlet")
+    outlet_name: Optional[str] = Field(default=None, description="The name of the outlet")
 
 
 class TaskPayload(BaseModel):

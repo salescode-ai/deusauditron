@@ -132,14 +132,19 @@ async def run_scenario(
             async def scenario_task_helper(example: Example) -> str:
                 return await scenario_task(example, dataset.metadata.get("last_node_name", ""))
 
+            experiment_metadata = {
+                "agent_name": payload.agent_name,
+                "experiment_name": payload.experiment_name,
+            }
+            if payload.outlet_id:
+                experiment_metadata["outlet_id"] = payload.outlet_id
+            if payload.outlet_name:
+                experiment_metadata["outlet_name"] = payload.outlet_name
             experiment = run_experiment(
                 dataset=dataset,
                 task=scenario_task_helper,
                 evaluators=[scenario_evaluator],
-                experiment_metadata={
-                    "agent_name": payload.agent_name,
-                    "experiment_name": payload.experiment_name
-                },
+                experiment_metadata=experiment_metadata,
             )
             experiment_ids.append(experiment.id)
         return {"success": True, "experiment_ids": experiment_ids}
