@@ -27,7 +27,7 @@ async def get_authorization(
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
             async with session.get(
-                get_config().auth_validation_url,
+                get_config().mgmt_url + "/users/me",
                 headers={"Authorization": auth_header}
             ) as response:
                 response.raise_for_status()
