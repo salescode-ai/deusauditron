@@ -31,6 +31,8 @@ client = px.Client(
 - `metadata`, `blueprint`, `dynamic_data`: Variables for DM
 - `transcript`: conversation messages for the agent
 - `replay`: If True, then try to simulate each and every message otherwise just pass in the messages field of DM create agent request.
+- `outlet_id`: Optional variable to be stored in Experiment metadata
+- `outlet_name`: Optional variable to be stored in Experiment metadata
 
 ### Dataset Retrieval
 
