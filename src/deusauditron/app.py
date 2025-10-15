@@ -70,7 +70,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
     app = FastAPI(
         title="Deusauditron API",
         description="Dedicated evaluation service (mirrors DeusMachina evaluation).",
-        version="1.0.4",
+        version="1.0.6",
         lifespan=lifespan,
     )
 
