@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from typing import Any
 BaseState = Any  # minimal typing; deusauditron does not manage full BaseState
-from deusauditron.state.object.eval import EvalState
+from deusauditron.state.object.eval import EvalState, VoiceEvalState
 from deusauditron.schemas.shared_models.models import InteractionLog, Message
 from .state_key import StateKey
 
@@ -39,6 +39,22 @@ class BaseStateStore(ABC):
 
     @abstractmethod
     async def clear_eval_state(self):
+        pass
+
+    @abstractmethod
+    async def set_voice_eval_state(self, key: StateKey, state: VoiceEvalState):
+        pass
+
+    @abstractmethod
+    async def get_voice_eval_state(self, key: StateKey) -> Optional[VoiceEvalState]:
+        pass
+
+    @abstractmethod
+    async def delete_voice_eval_state(self, key: StateKey):
+        pass
+
+    @abstractmethod
+    async def clear_voice_eval_state(self):
         pass
 
     @abstractmethod

@@ -351,9 +351,40 @@ class EvaluationPayload(BaseModel):
     )
 
 
+class VoiceEvaluationPayload(BaseModel):
+    """Request model for voice evaluation endpoint."""
+
+    api_keys: Dict[str, str] = Field(
+        default_factory=dict, description="API keys for the agent"
+    )
+    recording_path: str = Field(
+        ..., description="S3 URL to the voice recording file in OGG format"
+    )
+    transcript_path: str = Field(
+        ..., description="S3 URL to the transcript JSON file containing actual conversation text"
+    )
+    voice_eval_result: str = Field(
+        ..., description="S3 path where the voice evaluation result will be saved as voice_eval_result.json in format bucket_name/path/to/file"
+    )
+    evaluation_model: Optional[str] = Field(
+        default=None,
+        description="Model to use for voice evaluation (e.g., 'openai/gpt-4o-mini', 'anthropic/claude-3-5-sonnet-20241022'). If not provided, uses VOICE_EVAL_MODEL from config."
+    )
+    force: Optional[bool] = Field(
+        default=None,
+        description="Whether to force creation of a new voice evaluation, even if one already exists",
+    )
+
+
 class AgentEvalRequest(BaseRequest):
     payload: Optional[EvaluationPayload] = Field(
         default=None, description="The payload for the evaluation"
+    )
+
+
+class VoiceEvalRequest(BaseRequest):
+    payload: Optional[VoiceEvaluationPayload] = Field(
+        default=None, description="The payload for the voice evaluation"
     )
 
 
@@ -446,8 +477,8 @@ class SpeechPayload(BaseModel):
     def validate_text(self):
         if not self.text.strip():
             raise ValueError("text cannot be empty")
-        config = get_config()
-        max_length = config.speech.max_text_length
+        # Set a reasonable default max length for speech text
+        max_length = 5000  # Default max text length for speech synthesis
         if len(self.text) > max_length:
             raise ValueError(f"text length cannot exceed {max_length} characters")
         return self

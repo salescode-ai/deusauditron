@@ -16,6 +16,7 @@ from deusauditron.app_logging.logger import logger
 
 from deusauditron.engine import Auditron
 from deusauditron.routers.evaluation import evaluation_router
+from deusauditron.routers.voice_evaluation import voice_evaluation_router
 
 
 @asynccontextmanager
@@ -82,6 +83,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
 
     prefix = "/api/v1"
     app.include_router(evaluation_router, prefix=prefix)
+    app.include_router(voice_evaluation_router, prefix=prefix)
     return app
 
 

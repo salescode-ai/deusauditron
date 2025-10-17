@@ -4,7 +4,7 @@ import redis.asyncio as redis
 from pydantic import TypeAdapter
 
 from deusauditron.app_logging.logger import logger
-from deusauditron.state.object.eval import EvalState
+from deusauditron.state.object.eval import EvalState, VoiceEvalState
 from deusauditron.state.object.runtime import CurrentNode, InteractionLogList, MessagesList, PathList
 from deusauditron.state.store.base import BaseStateStore
 from deusauditron.state.store.state_key import StateKey
@@ -14,6 +14,7 @@ from deusauditron.state.object.base import BaseState
 # Minimal adapters: we are not using a discriminated union here; simple adapters suffice
 agent_state_adapter = TypeAdapter(BaseState)
 eval_state_adapter = TypeAdapter(EvalState)
+voice_eval_state_adapter = TypeAdapter(VoiceEvalState)
 
 
 class RedisStateStore(BaseStateStore):
@@ -23,6 +24,9 @@ class RedisStateStore(BaseStateStore):
 
     def _key_eval_state(self, key: StateKey) -> str:
         return f"{{{self.prefix}:{key.tenant_id}}}:{key.agent_id}:{key.run_id}:eval"
+
+    def _key_voice_eval_state(self, key: StateKey) -> str:
+        return f"{{{self.prefix}:{key.tenant_id}}}:{key.agent_id}:{key.run_id}:voice_eval"
 
     def _key_path(self, key: StateKey) -> str:
         return f"{{{self.prefix}:{key.tenant_id}}}:{key.agent_id}:{key.run_id}:path"
@@ -89,6 +93,34 @@ class RedisStateStore(BaseStateStore):
 
     async def clear_eval_state(self):
         pattern = f"{{{self.prefix}:*}}:*:eval"
+        keys = await self.client.keys(pattern)
+        if keys:
+            await self.client.delete(*keys)
+
+    async def set_voice_eval_state(self, key: StateKey, state: VoiceEvalState):
+        redis_key = self._key_voice_eval_state(key)
+        json_data = voice_eval_state_adapter.dump_json(state, by_alias=True)
+        await self.client.set(redis_key, json_data)
+
+    async def get_voice_eval_state(self, key: StateKey) -> Optional[VoiceEvalState]:
+        redis_key = self._key_voice_eval_state(key)
+        value = await self.client.get(redis_key)
+        if value is None:
+            return None
+        try:
+            if isinstance(value, bytes):
+                value = value.decode("utf-8")
+            state = voice_eval_state_adapter.validate_json(value)
+            return state
+        except Exception as e:
+            logger.error(f"Error deserializing voice eval state: {e}")
+            return None
+
+    async def delete_voice_eval_state(self, key: StateKey):
+        await self.client.delete(self._key_voice_eval_state(key))
+
+    async def clear_voice_eval_state(self):
+        pattern = f"{{{self.prefix}:*}}:*:voice_eval"
         keys = await self.client.keys(pattern)
         if keys:
             await self.client.delete(*keys)
