@@ -15,8 +15,12 @@ from deusauditron.schemas.autogen.references.evaluation_result_schema import (
     EvaluationResult,
     Status,
 )
-from deusauditron.schemas.shared_models.models import AgentEvalRequest
-from deusauditron.schemas.shared_models.models import EvaluationPayload
+from deusauditron.schemas.autogen.references.voice_evaluation_result_schema import (
+    VoiceEvaluationResult,
+    VoiceEvalStatus,
+)
+from deusauditron.schemas.shared_models.models import AgentEvalRequest, VoiceEvalRequest
+from deusauditron.schemas.shared_models.models import EvaluationPayload, VoiceEvaluationPayload
 from deusauditron.schemas.autogen.references.granular_evaluation_result_schema import (
     GranularEvaluationResults,
 )

@@ -2,7 +2,7 @@ import asyncio
 from typing import Optional
 
 from deusauditron.qbackends.base import BaseQueueBackend
-from deusauditron.schemas.shared_models.models import AgentEvalRequest, AgentRunRequest
+from deusauditron.schemas.shared_models.models import AgentEvalRequest, AgentRunRequest, VoiceEvalRequest
 from loguru import logger
 
 
@@ -10,6 +10,7 @@ class LocalQueueBackend(BaseQueueBackend):
     def __init__(self) -> None:
         self._run_queue = asyncio.Queue()
         self._eval_queue = asyncio.Queue()
+        self._voice_eval_queue = asyncio.Queue()
 
     async def enqueue_run_request(self, request: AgentRunRequest) -> None:
         await self._run_queue.put(request)
@@ -29,6 +30,15 @@ class LocalQueueBackend(BaseQueueBackend):
         except asyncio.CancelledError:
             return None
 
+    async def enqueue_voice_eval_request(self, request: VoiceEvalRequest) -> None:
+        await self._voice_eval_queue.put(request)
+
+    async def dequeue_voice_eval_request(self) -> Optional[VoiceEvalRequest]:
+        try:
+            return await self._voice_eval_queue.get()
+        except asyncio.CancelledError:
+            return None
+
     async def close(self) -> None:
         while not self._run_queue.empty():
             try:
@@ -38,6 +48,11 @@ class LocalQueueBackend(BaseQueueBackend):
         while not self._eval_queue.empty():
             try:
                 self._eval_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+        while not self._voice_eval_queue.empty():
+            try:
+                self._voice_eval_queue.get_nowait()
             except asyncio.QueueEmpty:
                 break
         logger.debug("Cleared local queues")

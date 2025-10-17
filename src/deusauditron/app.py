@@ -20,6 +20,8 @@ from deusauditron.routers.evaluation import evaluation_router
 from deusauditron.routers.phoenix import phoenix_router
 from deusauditron.routers.system import system_router
 from deusauditron.routers.scenario_evaluation import scenario_evaluation_router
+from deusauditron.routers.voice_evaluation import voice_evaluation_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -89,6 +91,7 @@ def create_app(config: Optional[Config] = None) -> FastAPI:
         evaluation_router,
         phoenix_router,
         scenario_evaluation_router,
+        voice_evaluation_router,
     ]
     for router in protected_routers:
         app.include_router(

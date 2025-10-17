@@ -5,11 +5,12 @@ from loguru import logger
 from redis.asyncio import Redis
 
 from deusauditron.qbackends.base import BaseQueueBackend
-from deusauditron.schemas.shared_models.models import AgentEvalRequest, AgentRunRequest
+from deusauditron.schemas.shared_models.models import AgentEvalRequest, AgentRunRequest, VoiceEvalRequest
 
 
 RUN_REQUEST_QUEUE_NAME = "globalq_agent_run_requests"
 EVAL_REQUEST_QUEUE_NAME = "globalq_agent_eval_requests"
+VOICE_EVAL_REQUEST_QUEUE_NAME = "globalq_agent_voice_eval_requests"
 
 
 class RedisQueueBackend(BaseQueueBackend):
@@ -78,6 +79,23 @@ class RedisQueueBackend(BaseQueueBackend):
             return None
         _, json_data = data
         return AgentEvalRequest.model_validate_json(json_data.decode("utf-8"))
+
+    async def enqueue_voice_eval_request(self, request: VoiceEvalRequest) -> None:
+        await self._connect_if_needed()
+        if not self.redis:
+            raise RuntimeError("Redis not connected")
+        json_data = request.model_dump_json()
+        await self.redis.rpush(VOICE_EVAL_REQUEST_QUEUE_NAME, json_data)  # type: ignore
+
+    async def dequeue_voice_eval_request(self) -> Optional[VoiceEvalRequest]:
+        await self._connect_if_needed()
+        if not self.redis:
+            raise RuntimeError("Redis not connected")
+        data: Optional[Tuple[bytes, bytes]] = await self.redis.blpop([VOICE_EVAL_REQUEST_QUEUE_NAME])  # type: ignore
+        if not data:
+            return None
+        _, json_data = data
+        return VoiceEvalRequest.model_validate_json(json_data.decode("utf-8"))
 
     async def close(self) -> None:
         if self.redis:

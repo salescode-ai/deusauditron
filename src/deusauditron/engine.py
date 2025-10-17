@@ -6,9 +6,11 @@ from deusauditron.app_logging.context import set_logging_context
 from deusauditron.app_logging.logger import logger
 from deusauditron.qbackends.base import BaseQueueBackend
 from deusauditron.state.manager import StateManager
-from deusauditron.state.object.eval import EvalState
+from deusauditron.state.object.eval import EvalState, VoiceEvalState
 from deusauditron.schemas.autogen.references.evaluation_result_schema import Status
-from deusauditron.schemas.shared_models.models import AgentEvalRequest
+from deusauditron.schemas.autogen.references.voice_evaluation_result_schema import VoiceEvalStatus
+from deusauditron.schemas.shared_models.models import AgentEvalRequest, VoiceEvalRequest
+from deusauditron.eval.voice_eval_worker import VoiceEvaluator
 
 from deusauditron.eval.eval_worker import LLMEvaluator
 from deusauditron.config import TracingManager
@@ -34,6 +36,7 @@ class Auditron:
         self.queue_backend = queue_backend
         self.lock_manager = lock_manager
         self._eval_consumer_task: Optional[asyncio.Task] = None
+        self._voice_eval_consumer_task: Optional[asyncio.Task] = None
         self._running = False
         Auditron._initialized = True
 
@@ -47,11 +50,14 @@ class Auditron:
         if not self._running:
             self._running = True
             self._eval_consumer_task = asyncio.create_task(self._consume_eval_requests())
+            self._voice_eval_consumer_task = asyncio.create_task(self._consume_voice_eval_requests())
 
     def stop(self):
         if self._running:
             if self._eval_consumer_task:
                 self._eval_consumer_task.cancel()
+            if self._voice_eval_consumer_task:
+                self._voice_eval_consumer_task.cancel()
             self._running = False
 
     async def wait_for_ready(self):
@@ -60,6 +66,8 @@ class Auditron:
         await asyncio.sleep(0.1)
         if not self._eval_consumer_task or self._eval_consumer_task.cancelled():
             raise RuntimeError("Evaluation consumer failed to start or was cancelled")
+        if not self._voice_eval_consumer_task or self._voice_eval_consumer_task.cancelled():
+            raise RuntimeError("Voice evaluation consumer failed to start or was cancelled")
         logger.info("Deusauditron engine is ready and operational")
 
     async def submit_eval_request(self, request: AgentEvalRequest, eval_state: EvalState):
@@ -76,6 +84,20 @@ class Auditron:
         finally:
             await self.lock_manager.release_lock(ckey)
 
+    async def submit_voice_eval_request(self, request: VoiceEvalRequest, voice_eval_state: VoiceEvalState):
+        """Enqueue a voice evaluation request and set initial voice eval state."""
+        if not self._running:
+            raise RuntimeError("Auditron is not running. Call start().")
+        ckey = request.composite_key
+        await self.lock_manager.wait_for_lock(ckey)
+        try:
+            await self.queue_backend.enqueue_voice_eval_request(request)
+            await StateManager().set_voice_eval_state(
+                request.tenant_id, request.agent_id, request.run_id, voice_eval_state
+            )
+        finally:
+            await self.lock_manager.release_lock(ckey)
+
     async def delete_eval_request(self, request: AgentEvalRequest):
         """Delete evaluation state (idempotent)."""
         if not self._running:
@@ -84,6 +106,19 @@ class Auditron:
         await self.lock_manager.wait_for_lock(ckey)
         try:
             await StateManager().delete_eval_state(
+                request.tenant_id, request.agent_id, request.run_id
+            )
+        finally:
+            await self.lock_manager.release_lock(ckey)
+
+    async def delete_voice_eval_request(self, request: VoiceEvalRequest):
+        """Delete voice evaluation state (idempotent)."""
+        if not self._running:
+            raise RuntimeError("Auditron is not running. Call start().")
+        ckey = request.composite_key
+        await self.lock_manager.wait_for_lock(ckey)
+        try:
+            await StateManager().delete_voice_eval_state(
                 request.tenant_id, request.agent_id, request.run_id
             )
         finally:
@@ -135,5 +170,48 @@ class Auditron:
                 logger.error(f"Deusauditron: failed to update error state: {state_ex}")
         finally:
             logger.info(f"## Releasing lock for {request.composite_key}")
+            await self.lock_manager.release_lock(request.composite_key)
+
+    async def _consume_voice_eval_requests(self):
+        logger.info("## Deusauditron: starting voice eval request consumer loop")
+        while True:
+            try:
+                request = await self.queue_backend.dequeue_voice_eval_request()
+                if not request:
+                    continue
+                asyncio.create_task(self._handle_voice_eval_request(request))
+            except asyncio.CancelledError:
+                logger.info("## Deusauditron: voice eval request consumer loop cancelled")
+                break
+            except Exception as ex:
+                logger.exception(f"## ERROR in Deusauditron _consume_voice_eval_requests: {ex}")
+
+    async def _handle_voice_eval_request(self, request: VoiceEvalRequest):
+        set_logging_context(request.tenant_id, request.agent_id, request.run_id)
+        logger.info(f"## Acquiring lock for voice eval {request.composite_key}")
+        await self.lock_manager.wait_for_lock(request.composite_key)
+        logger.info(
+            f"## Handling voice evaluation request {request.composite_key} in background"
+        )
+        try:
+            evaluator = VoiceEvaluator(request)
+            await evaluator.evaluate()
+            logger.info(f"## Deusauditron: voice evaluation completed {request.composite_key}")
+        except Exception as ex:
+            logger.error(f"[Deusauditron ERROR] in _handle_voice_eval_request: {ex}")
+            try:
+                voice_eval_state = await StateManager().get_voice_eval_state(
+                    request.tenant_id, request.agent_id, request.run_id
+                )
+                if voice_eval_state and voice_eval_state.voice_evaluation_result:
+                    voice_eval_state.voice_evaluation_result.status = VoiceEvalStatus.Error
+                    voice_eval_state.voice_evaluation_result.error_message = str(ex)
+                    await StateManager().set_voice_eval_state(
+                        request.tenant_id, request.agent_id, request.run_id, voice_eval_state
+                    )
+            except Exception as state_ex:
+                logger.error(f"Deusauditron: failed to update voice eval error state: {state_ex}")
+        finally:
+            logger.info(f"## Releasing lock for voice eval {request.composite_key}")
             await self.lock_manager.release_lock(request.composite_key)
 
