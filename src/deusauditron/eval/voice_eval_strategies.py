@@ -209,8 +209,8 @@ class STTEvaluationStrategy(BaseVoiceEvaluationStrategy):
                 "- Significant content changes\n\n"
                 "Return a JSON array with each individual difference as a separate item.\n"
                 "Schema: { items: [ { expected_output: \"<specific phrase from expected>\", actual_output_by_our_stt: \"<corresponding phrase from actual>\" } ] }\n\n"
-                f"Expected text:\n{actual_clean}\n\n"
-                f"Actual text (from our STT):\n{generated_clean}\n\n"
+                f"Expected text:\n{generated_clean}\n\n"
+                f"Actual text (from our STT):\n{actual_clean}\n\n"
                 "IMPORTANT: Each item should contain ONLY the specific mismatched portion, not the entire text."
             )
             messages = [Message(content=prompt, role=MessageRole.USER)]
