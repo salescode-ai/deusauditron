@@ -4,7 +4,9 @@ import re
 import boto3
 import textwrap
 import redis
-from typing import Any, Dict, List, Optional
+import boto3
+from urllib.parse import urlparse
+from typing import Any, Dict, List, Optional, Union
 import importlib.resources as pkg_resources
 from urllib.parse import urlparse
 

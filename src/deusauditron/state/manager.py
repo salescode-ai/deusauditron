@@ -28,6 +28,17 @@ class StateManager:
     async def delete_eval_state(self, tenant_id: str, agent_id: str, run_id: str):
         await self.store.delete_eval_state(StateKey(tenant_id=tenant_id, agent_id=agent_id, run_id=run_id))
 
+    async def set_voice_eval_state(self, tenant_id: str, agent_id: str, run_id: str, state):
+        logger.info(f"## StateManager.set_voice_eval_state called for {tenant_id}/{agent_id}/{run_id}")
+        await self.store.set_voice_eval_state(StateKey(tenant_id=tenant_id, agent_id=agent_id, run_id=run_id), state)
+        logger.info(f"## Voice Eval State successfully set for {tenant_id}/{agent_id}/{run_id}")
+
+    async def get_voice_eval_state(self, tenant_id: str, agent_id: str, run_id: str):
+        return await self.store.get_voice_eval_state(StateKey(tenant_id=tenant_id, agent_id=agent_id, run_id=run_id))
+
+    async def delete_voice_eval_state(self, tenant_id: str, agent_id: str, run_id: str):
+        await self.store.delete_voice_eval_state(StateKey(tenant_id=tenant_id, agent_id=agent_id, run_id=run_id))
+
     async def get_path(self, tenant_id: str, agent_id: str, run_id: str) -> List[str]:
         return await self.store.get_path(StateKey(tenant_id=tenant_id, agent_id=agent_id, run_id=run_id))
 

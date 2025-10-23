@@ -108,12 +108,45 @@ class StateConfig(BaseModel):
     check_interval: float = Field(default=0.1)
 
 
+class TranscriptionConfig(BaseModel):
+    strategy: str = Field(default="llm")  # "llm", "aws", "elevenlabs" or "deepgram"
+    llm_model: str = Field(default="whisper-1") 
+    timeout: int = Field(default=60)
+    aws_region: str = Field(default="us-east-1")
+    language: str = Field(default="en-US")
+
+
+class DeepgramConfig(BaseModel):
+    model: str = Field(default="nova-2")
+    api_url: str = Field(default="https://api.deepgram.com/v1/listen")
+    smart_format: bool = Field(default=True)
+    punctuate: bool = Field(default=True)
+
+
+class ElevenLabsConfig(BaseModel):
+    model: str = Field(default="scribe_v1")
+    upload_url: str = Field(default="https://api.elevenlabs.io/v1/speech-to-text")
+    transcripts_url: str = Field(default="https://api.elevenlabs.io/v1/speech-to-text/transcripts")
+    diarize: bool = Field(default=True)
+    max_poll_retries: int = Field(default=60, description="Maximum polling attempts for transcript readiness")
+    poll_interval: float = Field(default=1.0, description="Interval between polling attempts in seconds")
+
+
+class VoiceEvaluationConfig(BaseModel):
+    evaluation_model: str = Field(default="openai/gpt-4o-mini", description="Model to use for voice evaluation comparisons")
+    temperature: float = Field(default=0.0, description="Temperature for evaluation model")
+
+
 class Config(BaseModel):
     tracing: TracingConfig = Field(default_factory=TracingConfig)
     redis: RedisConfig = Field(default_factory=RedisConfig)
     cors: CORSConfig = Field(default_factory=CORSConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     state: StateConfig = Field(default_factory=StateConfig)
+    transcription: TranscriptionConfig = Field(default_factory=TranscriptionConfig)
+    deepgram: DeepgramConfig = Field(default_factory=DeepgramConfig)
+    elevenlabs: ElevenLabsConfig = Field(default_factory=ElevenLabsConfig)
+    voice_evaluation: VoiceEvaluationConfig = Field(default_factory=VoiceEvaluationConfig)
     log_level: str = Field(default="DEBUG")
     mgmt_url: str = Field(default="https://dev-apimgmt.salescode.ai/v1")
     deusmachina_url: str = Field(default="http://localhost:8080/internal/api/v1")
@@ -147,6 +180,31 @@ class Config(BaseModel):
             state=StateConfig(
                 wait_timeout=float(os.getenv("STATE_WAIT_TIMEOUT", "5.0")),
                 check_interval=float(os.getenv("STATE_CHECK_INTERVAL", "0.1")),
+            ),
+            transcription=TranscriptionConfig(
+                strategy=os.getenv("TRANSCRIPTION_STRATEGY", "elevenlabs"),
+                llm_model=os.getenv("TRANSCRIPTION_LLM_MODEL", "scribe_v1"),
+                timeout=int(os.getenv("TRANSCRIPTION_TIMEOUT", "60")),
+                aws_region=os.getenv("TRANSCRIPTION_AWS_REGION", "us-east-1"),
+                language=os.getenv("TRANSCRIPTION_LANGUAGE", "en-US"),
+            ),
+            deepgram=DeepgramConfig(
+                model=os.getenv("DEEPGRAM_MODEL", "nova-2"),
+                api_url=os.getenv("DEEPGRAM_API_URL", "https://api.deepgram.com/v1/listen"),
+                smart_format=os.getenv("DEEPGRAM_SMART_FORMAT", "true").lower() == "true",
+                punctuate=os.getenv("DEEPGRAM_PUNCTUATE", "true").lower() == "true",
+            ),
+            elevenlabs=ElevenLabsConfig(
+                model=os.getenv("ELEVENLABS_MODEL", "scribe_v1"),
+                upload_url=os.getenv("ELEVENLABS_UPLOAD_URL", "https://api.elevenlabs.io/v1/speech-to-text"),
+                transcripts_url=os.getenv("ELEVENLABS_TRANSCRIPTS_URL", "https://api.elevenlabs.io/v1/speech-to-text/transcripts"),
+                diarize=os.getenv("ELEVENLABS_DIARIZE", "true").lower() == "true",
+                max_poll_retries=int(os.getenv("ELEVENLABS_MAX_POLL_RETRIES", "60")),
+                poll_interval=float(os.getenv("ELEVENLABS_POLL_INTERVAL", "1.0")),
+            ),
+            voice_evaluation=VoiceEvaluationConfig(
+                evaluation_model=os.getenv("VOICE_EVAL_MODEL", "openai/gpt-4o-mini"),
+                temperature=float(os.getenv("VOICE_EVAL_TEMPERATURE", "0.0")),
             ),
             log_level=os.getenv("DEUSAUDITRON_LOG_LEVEL", "DEBUG").upper(),
             mgmt_url=os.getenv("MGMT_URL", "https://dev-apimgmt.salescode.ai/v1"),

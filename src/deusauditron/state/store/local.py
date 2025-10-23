@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from deusauditron.state.object.eval import EvalState
+from deusauditron.state.object.eval import EvalState, VoiceEvalState
 from deusauditron.state.object.runtime import CurrentNode, InteractionLogList, MessagesList
 from deusauditron.state.store.base import BaseStateStore
 from deusauditron.state.store.state_key import StateKey
@@ -10,6 +10,7 @@ from deusauditron.schemas.shared_models.models import InteractionLog, Message
 class LocalStateStore(BaseStateStore):
     _instance = None
     _eval_store: Dict[StateKey, EvalState]
+    _voice_eval_store: Dict[StateKey, VoiceEvalState]
     _path: Dict[StateKey, List[str]]
     _messages: Dict[StateKey, MessagesList]
     _interaction_log: Dict[StateKey, InteractionLogList]
@@ -20,6 +21,7 @@ class LocalStateStore(BaseStateStore):
         if cls._instance is None:
             cls._instance = super(LocalStateStore, cls).__new__(cls)
             cls._instance._eval_store = {}
+            cls._instance._voice_eval_store = {}
             cls._instance._path = {}
             cls._instance._messages = {}
             cls._instance._interaction_log = {}
@@ -50,6 +52,18 @@ class LocalStateStore(BaseStateStore):
 
     async def clear_eval_state(self):
         self._eval_store.clear()
+
+    async def set_voice_eval_state(self, key: StateKey, state: VoiceEvalState):
+        self._voice_eval_store[key] = state
+
+    async def get_voice_eval_state(self, key: StateKey) -> VoiceEvalState | None:
+        return self._voice_eval_store.get(key)
+
+    async def delete_voice_eval_state(self, key: StateKey):
+        self._voice_eval_store.pop(key, None)
+
+    async def clear_voice_eval_state(self):
+        self._voice_eval_store.clear()
 
     async def get_path(self, key: StateKey) -> List[str]:
         return self._path.get(key, [])
